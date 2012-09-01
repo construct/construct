@@ -1,4 +1,4 @@
-from construct import *
+from construct import Aligned, Struct, Byte, Array, Debugger
 
 
 s = Aligned(

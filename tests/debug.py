@@ -1,4 +1,4 @@
-from construct import *
+from construct import Struct, UBInt8, Debugger, Enum
 
 
 foo = Struct("foo",
