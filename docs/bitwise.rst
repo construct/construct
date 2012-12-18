@@ -2,10 +2,10 @@
 History
 =======
 
-In Construct 1.XX, parsing and building where performed at the bit level: the
+In Construct 1.XX, parsing and building were performed at the bit level: the
 entire data was converted to a string of 1's and 0's, so you could really work
 with bit fields. Every construct worked with bits, except some (which were
-named ByteXXX) that worked on whole octets. This has made it very easy to work
+named ByteXXX) that worked on whole octets. This made it very easy to work
 with single bits, such as the flags of the TCP header, 7-bit ASCII characters,
 or fields that were not aligned to the byte boundary (nibbles et al).
 
