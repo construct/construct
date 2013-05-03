@@ -32,7 +32,7 @@ Structs
 For those of you familiar with C, Structs are very intuitive, but here's a
 short explanation for the larger audience. A Struct is a sequenced collection
 of fields or other components, that are parsed/built in that order. Note that
-if two or more fields of a Struct have the same name, the last field "wins;"
+if two or more fields of a Struct have the same name, the last field "wins";
 that is, the last field's value will be the value returned from a parse.
 
 >>> from construct import Struct, UBInt8, SLInt16, LFloat32
@@ -74,12 +74,12 @@ And here is how we build Structs:
 >>> # Rebuild the parsed object.
 >>> c.build(x)
 '\x07\x00\x01\x00\x00\x00\x01'
- 
+
 >>> # Mutate the parsed object and build...
 >>> x.b = 5000
 >>> c.build(x)
 '\x07\x88\x13\x00\x00\x00\x01'
-  
+
 >>> # ...Or, we can create a new container.
 >>> c.build(Container(a = 9, b = 1234, c = 56.78))
 '\t\xd2\x04\xb8\x1ecB'
@@ -164,7 +164,7 @@ Sequences
 
 Sequences are very similar to Structs, but operate with lists rather than
 containers. Sequences are less commonly used than Structs, but are very handy
-in certain situations. Since a list is returned, in place of an attribute
+in certain situations. Since a list is returned in place of an attribute
 container, the names of the sub-constructs are not important; two constructs
 with the same name will not override or replace each other.
 
@@ -209,18 +209,18 @@ Embedded
 Like Structs, Sequences are compatible with the Embed wrapper. Embedding one
 Sequence into another causes a merge of the parsed lists of the two Sequences.
 
->>> foo = Sequence("foo", 
-...     UBInt8("a"), 
+>>> foo = Sequence("foo",
+...     UBInt8("a"),
 ...     UBInt8("b"),
 ... )
->>> bar = Sequence("bar", 
+>>> bar = Sequence("bar",
 ...     foo,                  # <-- unembedded
-...     UBInt8("c"), 
+...     UBInt8("c"),
 ...     UBInt8("d"),
 ... )
->>> bar2 = Sequence("bar", 
+>>> bar2 = Sequence("bar",
 ...     Embed(foo),           # <-- embedded
-...     UBInt8("c"), 
+...     UBInt8("c"),
 ...     UBInt8("d"),
 ... )
 >>> bar.parse("abcd")

@@ -60,7 +60,7 @@ met, the ``then_construct`` is used; otherwise the ``else_construct`` is used.
 ... )
 >>>
 >>> foo.parse("\x09\xaa\xbb\xcc\xdd")    # <-- condition is met
-Container(a = 9, b = 2864434397L) 
+Container(a = 9, b = 2864434397L)
 >>> foo.parse("\x02\xaa\xbb")            # <-- condition is not met
 Container(a = 2, b = 43707)
 
@@ -100,7 +100,7 @@ Container(a = 1, b = 2)
 Padding
 -------
 
-Padding is a sequence of bytes of bits that contains no data (its value is
+Padding is a sequence of bytes or bits that contains no data (its value is
 discarded), and is necessary only for padding, etc.
 
 >>> foo = Struct("foo",
