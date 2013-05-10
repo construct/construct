@@ -158,6 +158,7 @@ Container(c = 99, d = 100, foo = Container(a = 97, b = 98))
 >>> bar2.parse("abcd")
 Container(a = 97, b = 98, c = 99, d = 100)
 
+.. seealso:: The :func:`~construct.macros.Embedded` macro.
 
 Sequences
 =========

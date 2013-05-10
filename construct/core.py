@@ -408,14 +408,17 @@ class MetaArray(Subconstruct):
     """
     An array (repeater) of a meta-count. The array will iterate exactly
     ``countfunc()`` times. Will raise ArrayError if less elements are found.
-    See also Array, Range and RepeatUntil.
+
+    .. seealso::
+
+        The :func:`~construct.macros.Array` macro, :func:`Range` and :func:`RepeatUntil`.
 
     :param countfunc: a function that takes the context as a parameter and returns
                       the number of elements of the array (count)
     :param subcon: the subcon to repeat ``countfunc()`` times
 
     Example::
-        
+
         MetaArray(lambda ctx: 5, UBInt8("foo"))
     """
     __slots__ = ["countfunc"]
@@ -457,7 +460,11 @@ class Range(Subconstruct):
     r"""
     A range-array. The subcon will iterate between ``mincount`` to ``maxcount``
     times. If less than ``mincount`` elements are found, raises RangeError.
-    See also GreedyRange and OptionalGreedyRange.
+
+    .. seealso::
+
+        The :func:`~construct.macros.GreedyRange` and
+        :func:`~construct.macros.OptionalGreedyRange` macros.
 
     The general-case repeater. Repeats the given unit for at least ``mincount``
     times, and up to ``maxcount`` times. If an exception occurs (EOF, validation
@@ -471,7 +478,7 @@ class Range(Subconstruct):
     :param subcon: the subcon to repeat
 
     Example::
-    
+
         >>> c = Range(3, 7, UBInt8("foo"))
         >>> c.parse("\x01\x02")
         Traceback (most recent call last):
@@ -560,7 +567,7 @@ class RepeatUntil(Subconstruct):
     :param subcon: the subcon to repeat.
 
     Example::
-    
+
         # will read chars until '\x00' (inclusive)
         RepeatUntil(lambda obj, ctx: obj == b"\x00",
             Field("chars", 1)
@@ -618,7 +625,8 @@ class Struct(Construct):
     """
     A sequence of named constructs, similar to structs in C. The elements are
     parsed and built in the order they are defined.
-    See also Embedded.
+
+    .. seealso:: The :func:`~construct.macros.Embedded` macro.
 
     :param name: the name of the structure
     :param subcons: a sequence of subconstructs that make up this structure.
@@ -627,7 +635,7 @@ class Struct(Construct):
                    considered "advanced usage", and may be removed in the future.
 
     Example::
-    
+
         Struct("foo",
             UBInt8("first_element"),
             UBInt16("second_element"),
@@ -689,7 +697,8 @@ class Sequence(Struct):
     """
     A sequence of unnamed constructs. The elements are parsed and built in the
     order they are defined.
-    See also Embedded.
+
+    .. seealso:: The :func:`~construct.macros.Embedded` macro.
 
     :param name: the name of the structure
     :param subcons: a sequence of subconstructs that make up this structure.
@@ -698,7 +707,7 @@ class Sequence(Struct):
                    considered "advanced usage", and may be removed in the future.
 
     Example::
-    
+
         Sequence("foo",
             UBInt8("first_element"),
             UBInt16("second_element"),
@@ -753,7 +762,7 @@ class Union(Construct):
     :param subcons: additional subcons
 
     Example::
-    
+
         Union("what_are_four_bytes",
             UBInt32("one_dword"),
             Struct("two_words", UBInt16("first"), UBInt16("second")),
@@ -787,7 +796,8 @@ class Switch(Construct):
     A conditional branch. Switch will choose the case to follow based on
     the return value of keyfunc. If no case is matched, and no default value
     is given, SwitchError will be raised.
-    See also Pass.
+
+    .. seealso:: :func:`Pass`.
 
     :param name: the name of the construct
     :param keyfunc: a function that takes the context and returns a key, which
@@ -801,7 +811,7 @@ class Switch(Construct):
                         of parsing. defualt is False.
 
     Example::
-    
+
         Struct("foo",
             UBInt8("type"),
             Switch("value", lambda ctx: ctx.type, {
@@ -858,7 +868,7 @@ class Select(Construct):
     Selects the first matching subconstruct. It will literally try each of
     the subconstructs, until one matches.
 
-    .. note:: requires a seekable stream
+    .. note:: Requires a seekable stream.
 
     :param name: the name of the construct
     :param subcons: the subcons to try (order-sensitive)
@@ -932,16 +942,19 @@ class Pointer(Subconstruct):
     """
     Changes the stream position to a given offset, where the construction
     should take place, and restores the stream position when finished.
-    See also Anchor, OnDemand and OnDemandPointer.
 
-    .. note:: requires a seekable stream
+    .. seealso::
+        :func:`Anchor`, :func:`OnDemand` and the
+        :func:`~construct.macros.OnDemandPointer` macro.
+
+    .. note:: Requires a seekable stream.
 
     :param offsetfunc: a function that takes the context and returns an absolute
                        stream position, where the construction would take place
     :param subcon: the subcon to use at ``offsetfunc()``
 
     Example::
-    
+
         Struct("foo",
             UBInt32("spam_pointer"),
             Pointer(lambda ctx: ctx.spam_pointer,
@@ -975,14 +988,14 @@ class Peek(Subconstruct):
     See also Union. If the end of the stream is reached when peeking,
     returns None.
 
-    .. note:: requires a seekable stream
+    .. note:: Requires a seekable stream.
 
     :param subcon: the subcon to peek at
     :param perform_build: whether or not to perform building. by default this
                           parameter is set to False, meaning building is a no-op.
 
     Example::
-    
+
         Peek(UBInt8("foo"))
     """
     __slots__ = ["perform_build"]
@@ -1012,9 +1025,10 @@ class OnDemand(Subconstruct):
     data from the stream. The data will be parsed and cached for later use.
     You can use the 'has_value' property to know whether the data has already
     been demanded.
-    See also OnDemandPointer.
 
-    .. note:: requires a seekable stream.
+    .. seealso:: The :func:`~construct.macros.OnDemandPointer` macro.
+
+    .. note:: Requires a seekable stream.
 
     :param subcon: the subcon to read/write on demand
     :param advance_stream: whether or not to advance the stream position. by
@@ -1023,7 +1037,7 @@ class OnDemand(Subconstruct):
                         LazyContainer has not been demaned, building is a no-op.
 
     Example::
-    
+
         OnDemand(Array(10000, UBInt8("foo"))
     """
     __slots__ = ["advance_stream", "force_build"]
@@ -1048,9 +1062,10 @@ class Buffered(Subconstruct):
     """
     Creates an in-memory buffered stream, which can undergo encoding and
     decoding prior to being passed on to the subconstruct.
-    See also Bitwise.
 
-    .. warning:: do not use pointers inside ``Buffered``
+    .. seealso:: The :func:`~construct.macros.Bitwise` macro.
+
+    .. warning:: Do not use pointers inside ``Buffered``.
 
     :param subcon: the subcon which will operate on the buffer
     :param encoder: a function that takes a string and returns an encoded
@@ -1061,7 +1076,7 @@ class Buffered(Subconstruct):
                     or "resizes" it according to the encoding/decoding process.
 
     Example::
-    
+
         Buffered(BitField("foo", 16),
             encoder = decode_bin,
             decoder = encode_bin,
@@ -1095,13 +1110,14 @@ class Restream(Subconstruct):
     internally, reading it from- or writing it to the underlying stream
     as needed. For example, BitStreamReader reads whole bytes from the
     underlying stream, but returns them as individual bits.
-    See also Bitwise.
+
+    .. seealso:: The :func:`~construct.macros.Bitwise` macro.
 
     When the parsing or building is done, the stream's close method
     will be invoked. It can perform any finalization needed for the stream
     wrapper, but it must not close the underlying stream.
 
-    .. warning:: do not use pointers inside ``Restream``
+    .. warning:: Do not use pointers inside ``Restream``.
 
     :param subcon: the subcon
     :param stream_reader: the read-wrapper
@@ -1110,7 +1126,7 @@ class Restream(Subconstruct):
                     or "resizes" it according to the encoding/decoding process.
 
     Example::
-    
+
         Restream(BitField("foo", 16),
             stream_reader = BitStreamReader,
             stream_writer = BitStreamWriter,
@@ -1150,7 +1166,7 @@ class Reconfig(Subconstruct):
     :param clearflags: the flags to clear (default is 0)
 
     Example::
-    
+
         Reconfig("foo", UBInt8("bar"))
     """
     __slots__ = []
@@ -1174,10 +1190,10 @@ class Anchor(Construct):
 
     .. note::
 
-       Anchor requires a seekable stream, or at least a tellable stream; it is
+       Anchor Requires a seekable stream, or at least a tellable stream; it is
        implemented using the ``tell()`` method of file-like objects.
 
-    .. seealso:: Pointer
+    .. seealso:: :func:`Pointer`
     """
 
     __slots__ = []
@@ -1196,7 +1212,7 @@ class Value(Construct):
     :param func: a function that takes the context and return the computed value
 
     Example::
-    
+
         Struct("foo",
             UBInt8("width"),
             UBInt8("height"),
@@ -1259,7 +1275,7 @@ class LazyBound(Construct):
     :param bindfunc: the function (called without arguments) returning the bound construct
 
     Example::
-    
+
         foo = Struct("foo",
             UBInt8("bar"),
             LazyBound("next", lambda: foo),
@@ -1287,12 +1303,13 @@ class Pass(Construct):
     """
     A do-nothing construct, useful as the default case for Switch, or
     to indicate Enums.
-    See also Switch and Enum.
 
-    .. note:: this construct is a singleton. Do not try to instatiate it, as it  will not work
+    .. seealso:: :func:`Switch` and the :func:`~construct.macros.Enum` macro.
+
+    .. note:: This construct is a singleton. Do not try to instatiate it, as it  will not work.
 
     Example::
-    
+
         Pass
     """
     __slots__ = []
@@ -1307,9 +1324,10 @@ Pass = Pass(None)
 """
 A do-nothing construct, useful as the default case for Switch, or
 to indicate Enums.
-See also Switch and Enum.
 
-.. note:: this construct is a singleton. Do not try to instatiate it, as it  will not work
+.. seealso:: :func:`Switch` and the :func:`~construct.macros.Enum` macro.
+
+.. note:: This construct is a singleton. Do not try to instatiate it, as it  will not work.
 
 Example::
 
@@ -1322,11 +1340,11 @@ class Terminator(Construct):
     You can use this to ensure no more unparsed data follows.
 
     .. note::
-        * this construct is only meaningful for parsing. For building, it's a no-op.
-        * this construct is a singleton. Do not try to instatiate it, as it will not work
+        * This construct is only meaningful for parsing. For building, it's a no-op.
+        * This construct is a singleton. Do not try to instatiate it, as it will not work.
 
     Example::
-    
+
         Terminator
     """
     __slots__ = []
@@ -1344,8 +1362,8 @@ Asserts the end of the stream has been reached at the point it's placed.
 You can use this to ensure no more unparsed data follows.
 
 .. note::
-    * this construct is only meaningful for parsing. For building, it's a no-op.
-    * this construct is a singleton. Do not try to instatiate it, as it will not work
+    * This construct is only meaningful for parsing. For building, it's a no-op.
+    * This construct is a singleton. Do not try to instatiate it, as it will not work.
 
 Example::
 

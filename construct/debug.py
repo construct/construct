@@ -13,8 +13,9 @@ class Probe(Construct):
     """
     A probe: dumps the context, stack frames, and stream content to the screen
     to aid the debugging process.
-    See also Debugger.
-    
+
+    .. seealso:: :class:`Debugger`.
+
     :param name: the display name
     :param show_stream: whether or not to show stream contents. default is True. the stream must be seekable.
     :param show_context: whether or not to show the context. default is True.

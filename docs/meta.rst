@@ -108,7 +108,9 @@ RepeatUntil
 -----------
 
 A repeater that repeats until a condition is met. The perfect example is
-null-terminated strings. Note: for null-terminated strings, use CString.
+null-terminated strings.
+
+.. note:: For null-terminated strings, use :func:`~construct.CString`.
 
 >>> foo = RepeatUntil(lambda obj, ctx: obj == "\x00", Field("data", 1))
 >>>
@@ -217,10 +219,12 @@ Pointer
 Pointer allows for non-sequential construction. The pointer first changes the
 stream position, constructs the subconstruct, and restores the original stream
 position.
-the stream position points the construction
-Note: pointers are available only for seekable streams (in-memory and files).
-Sockets and pipes do not suppose seeking, so you'll have to first read the
-data from the stream, and parse it in-memory.
+
+.. note::
+
+    Pointers are available only for seekable streams (in-memory and files).
+    Sockets and pipes do not suppose seeking, so you'll have to first read the
+    data from the stream, and parse it in-memory.
 
 >>> foo = Struct("foo",
 ...     Pointer(lambda ctx: 4, Byte("data1")),   # <-- data1 is at (absolute)
@@ -264,9 +268,12 @@ with record-oriented data, where you don't have to actually parse the data
 unless it's actually needed. The result of OnDemand is an OnDemandContainer --
 a special object that "remembers" the stream position where its data is found,
 and parses it when you access its .value property.
-Note: lazy construction is available only for seekable streams (in-memory and
-files). Sockets and pipes do not suppose seeking, so you'll have to first read
-the data from the stream, and parse it in-memory.
+
+.. note::
+
+    Lazy construction is available only for seekable streams (in-memory and
+    files). Sockets and pipes do not suppose seeking, so you'll have to first
+    read the data from the stream, and parse it in-memory.
 
 >>> foo = Struct("foo",
 ...     Byte("a"),

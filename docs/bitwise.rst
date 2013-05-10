@@ -42,7 +42,8 @@ bits rather than bytes. When parsing a BitStruct, the data is first converted
 to a bit stream (a stream of 1's and 0's), and only then is it fed to the
 subconstructs. The subconstructs are expected to operate on bits instead of
 bytes. For reference, see the code snippet in the BitField section.
-Note: BitStruct is actually just a wrapper for the Bitwise construct.
+
+.. note:: BitStruct is actually just a wrapper for the :func:`~construct.macros.Bitwise` construct.
 
 Important notes
 ---------------
@@ -50,6 +51,10 @@ Important notes
 * Non-nestable - BitStructs are not nestable/stackable; writing something
   like ``BitStruct("foo", BitStruct("bar", Octet("spam")))`` will not work. You
   can use regular Structs inside BitStructs.
+* BitStructs are embeddable.
+
+  .. seealso:: The :func:`~construct.macros.EmbeddedBitStruct` macro.
+
 * Byte-Aligned - The total size of the elements of a BitStruct must be a
   multiple of 8 (due to alignment issues)
 * Pointers and OnDemand - Do not place Pointers or OnDemands inside

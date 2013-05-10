@@ -44,7 +44,7 @@ def BitField(name, length, swapped = False, signed = False, bytesize = 8):
     :param bytesize: number of bits per byte, for byte-swapping
 
     Example::
-    
+
         >>> foo = BitStruct("foo",
         ...     BitField("a", 3),
         ...     Flag("b"),
@@ -76,8 +76,8 @@ def BitField(name, length, swapped = False, signed = False, bytesize = 8):
     )
 
 def Padding(length, pattern = six.b("\x00"), strict = False):
-    r"""a padding field (value is discarded)
-    
+    r"""A padding field (value is discarded)
+
     :param length: the length of the field. the length can be either an integer,
                    or a function that takes the context as an argument and returns the length
     :param pattern: the padding pattern (character) to use. default is "\x00"
@@ -117,111 +117,111 @@ def Flag(name, truth = 1, falsehood = 0, default = False):
 # field shortcuts
 #===============================================================================
 def Bit(name):
-    """a 1-bit BitField; must be enclosed in a BitStruct"""
+    """A 1-bit BitField; must be enclosed in a BitStruct"""
     return BitField(name, 1)
 def Nibble(name):
-    """a 4-bit BitField; must be enclosed in a BitStruct"""
+    """A 4-bit BitField; must be enclosed in a BitStruct"""
     return BitField(name, 4)
 def Octet(name):
-    """an 8-bit BitField; must be enclosed in a BitStruct"""
+    """An 8-bit BitField; must be enclosed in a BitStruct"""
     return BitField(name, 8)
 
 def UBInt8(name):
-    """unsigned, big endian 8-bit integer"""
+    """Unsigned, big endian 8-bit integer"""
     return FormatField(name, ">", "B")
 def UBInt16(name):
-    """unsigned, big endian 16-bit integer"""
+    """Unsigned, big endian 16-bit integer"""
     return FormatField(name, ">", "H")
 def UBInt32(name):
-    """unsigned, big endian 32-bit integer"""
+    """Unsigned, big endian 32-bit integer"""
     return FormatField(name, ">", "L")
 def UBInt64(name):
-    """unsigned, big endian 64-bit integer"""
+    """Unsigned, big endian 64-bit integer"""
     return FormatField(name, ">", "Q")
 
 def SBInt8(name):
-    """signed, big endian 8-bit integer"""
+    """Signed, big endian 8-bit integer"""
     return FormatField(name, ">", "b")
 def SBInt16(name):
-    """signed, big endian 16-bit integer"""
+    """Signed, big endian 16-bit integer"""
     return FormatField(name, ">", "h")
 def SBInt32(name):
-    """signed, big endian 32-bit integer"""
+    """Signed, big endian 32-bit integer"""
     return FormatField(name, ">", "l")
 def SBInt64(name):
-    """signed, big endian 64-bit integer"""
+    """Signed, big endian 64-bit integer"""
     return FormatField(name, ">", "q")
 
 def ULInt8(name):
-    """unsigned, little endian 8-bit integer"""
+    """Unsigned, little endian 8-bit integer"""
     return FormatField(name, "<", "B")
 def ULInt16(name):
-    """unsigned, little endian 16-bit integer"""
+    """Unsigned, little endian 16-bit integer"""
     return FormatField(name, "<", "H")
 def ULInt32(name):
-    """unsigned, little endian 32-bit integer"""
+    """Unsigned, little endian 32-bit integer"""
     return FormatField(name, "<", "L")
 def ULInt64(name):
-    """unsigned, little endian 64-bit integer"""
+    """Unsigned, little endian 64-bit integer"""
     return FormatField(name, "<", "Q")
 
 def SLInt8(name):
-    """signed, little endian 8-bit integer"""
+    """Signed, little endian 8-bit integer"""
     return FormatField(name, "<", "b")
 def SLInt16(name):
-    """signed, little endian 16-bit integer"""
+    """Signed, little endian 16-bit integer"""
     return FormatField(name, "<", "h")
 def SLInt32(name):
-    """signed, little endian 32-bit integer"""
+    """Signed, little endian 32-bit integer"""
     return FormatField(name, "<", "l")
 def SLInt64(name):
-    """signed, little endian 64-bit integer"""
+    """Signed, little endian 64-bit integer"""
     return FormatField(name, "<", "q")
 
 def UNInt8(name):
-    """unsigned, native endianity 8-bit integer"""
+    """Unsigned, native endianity 8-bit integer"""
     return FormatField(name, "=", "B")
 def UNInt16(name):
-    """unsigned, native endianity 16-bit integer"""
+    """Unsigned, native endianity 16-bit integer"""
     return FormatField(name, "=", "H")
 def UNInt32(name):
-    """unsigned, native endianity 32-bit integer"""
+    """Unsigned, native endianity 32-bit integer"""
     return FormatField(name, "=", "L")
 def UNInt64(name):
-    """unsigned, native endianity 64-bit integer"""
+    """Unsigned, native endianity 64-bit integer"""
     return FormatField(name, "=", "Q")
 
 def SNInt8(name):
-    """signed, native endianity 8-bit integer"""
+    """Signed, native endianity 8-bit integer"""
     return FormatField(name, "=", "b")
 def SNInt16(name):
-    """signed, native endianity 16-bit integer"""
+    """Signed, native endianity 16-bit integer"""
     return FormatField(name, "=", "h")
 def SNInt32(name):
-    """signed, native endianity 32-bit integer"""
+    """Signed, native endianity 32-bit integer"""
     return FormatField(name, "=", "l")
 def SNInt64(name):
-    """signed, native endianity 64-bit integer"""
+    """Signed, native endianity 64-bit integer"""
     return FormatField(name, "=", "q")
 
 def BFloat32(name):
-    """big endian, 32-bit IEEE floating point number"""
+    """Big endian, 32-bit IEEE floating point number"""
     return FormatField(name, ">", "f")
 def LFloat32(name):
-    """little endian, 32-bit IEEE floating point number"""
+    """Little endian, 32-bit IEEE floating point number"""
     return FormatField(name, "<", "f")
 def NFloat32(name):
-    """native endianity, 32-bit IEEE floating point number"""
+    """Native endianity, 32-bit IEEE floating point number"""
     return FormatField(name, "=", "f")
 
 def BFloat64(name):
-    """big endian, 64-bit IEEE floating point number"""
+    """Big endian, 64-bit IEEE floating point number"""
     return FormatField(name, ">", "d")
 def LFloat64(name):
-    """little endian, 64-bit IEEE floating point number"""
+    """Little endian, 64-bit IEEE floating point number"""
     return FormatField(name, "<", "d")
 def NFloat64(name):
-    """native endianity, 64-bit IEEE floating point number"""
+    """Native endianity, 64-bit IEEE floating point number"""
     return FormatField(name, "=", "d")
 
 
@@ -236,7 +236,7 @@ def Array(count, subcon):
     :param subcon: construct to repeat
 
     Example::
-    
+
         >>> c = Array(4, UBInt8("foo"))
         >>> c.parse("\x01\x02\x03\x04")
         [1, 2, 3, 4]
@@ -258,8 +258,8 @@ def Array(count, subcon):
     return con
 
 def PrefixedArray(subcon, length_field = UBInt8("length")):
-    """an array prefixed by a length field.
-    
+    """An array prefixed by a length field.
+
     :param subcon: the subcon to be repeated
     :param length_field: a construct returning an integer
     """
@@ -281,7 +281,7 @@ def GreedyRange(subcon):
     :param subcon: construct to repeat
 
     Example::
-    
+
         >>> from construct import GreedyRange, UBInt8
         >>> c = GreedyRange(UBInt8("foo"))
         >>> c.parse("\x01")
@@ -311,7 +311,7 @@ def OptionalGreedyRange(subcon):
     :param subcon: construct to repeat
 
     Example::
-    
+
         >>> from construct import OptionalGreedyRange, UBInt8
         >>> c = OptionalGreedyRange(UBInt8("foo"))
         >>> c.parse("")
@@ -330,15 +330,15 @@ def OptionalGreedyRange(subcon):
 # subconstructs
 #===============================================================================
 def Optional(subcon):
-    """an optional construct. if parsing fails, returns None.
-    
+    """An optional construct. if parsing fails, returns None.
+
     :param subcon: the subcon to optionally parse or build
     """
     return Select(subcon.name, subcon, Pass)
 
 def Bitwise(subcon):
-    """converts the stream to bits, and passes the bitstream to subcon
-    
+    """Converts the stream to bits, and passes the bitstream to subcon
+
     :param subcon: a bitwise construct (usually BitField)
     """
     # subcons larger than MAX_BUFFER will be wrapped by Restream instead
@@ -362,8 +362,8 @@ def Bitwise(subcon):
     return con
 
 def Aligned(subcon, modulus = 4, pattern = six.b("\x00")):
-    r"""aligns subcon to modulus boundary using padding pattern
-    
+    r"""Aligns subcon to modulus boundary using padding pattern
+
     :param subcon: the subcon to align
     :param modulus: the modulus boundary (default is 4)
     :param pattern: the padding pattern (default is \x00)
@@ -383,9 +383,9 @@ def Aligned(subcon, modulus = 4, pattern = six.b("\x00")):
     )
 
 def SeqOfOne(name, *args, **kw):
-    r"""a sequence of one element. only the first element is meaningful, the
+    r"""A sequence of one element. only the first element is meaningful, the
     rest are discarded
-    
+
     :param name: the name of the sequence
     :param \*args: subconstructs
     :param \*\*kw: any keyword arguments to Sequence
@@ -393,23 +393,23 @@ def SeqOfOne(name, *args, **kw):
     return IndexingAdapter(Sequence(name, *args, **kw), index = 0)
 
 def Embedded(subcon):
-    """embeds a struct into the enclosing struct.
-    
+    """Embeds a struct into the enclosing struct.
+
     :param subcon: the struct to embed
     """
     return Reconfig(subcon.name, subcon, subcon.FLAG_EMBED)
 
 def Rename(newname, subcon):
-    """renames an existing construct
-    
+    """Renames an existing construct
+
     :param newname: the new name
     :param subcon: the subcon to rename
     """
     return Reconfig(newname, subcon)
 
 def Alias(newname, oldname):
-    """creates an alias for an existing element in a struct
-    
+    """Creates an alias for an existing element in a struct
+
     :param newname: the new name
     :param oldname: the name of an existing element
     """
@@ -420,8 +420,8 @@ def Alias(newname, oldname):
 # mapping
 #===============================================================================
 def SymmetricMapping(subcon, mapping, default = NotImplemented):
-    """defines a symmetrical mapping: a->b, b->a.
-    
+    """Defines a symmetrical mapping: a->b, b->a.
+
     :param subcon: the subcon to map
     :param mapping: the encoding mapping (a dict); the decoding mapping is
                     achieved by reversing this mapping
@@ -438,10 +438,10 @@ def SymmetricMapping(subcon, mapping, default = NotImplemented):
     )
 
 def Enum(subcon, **kw):
-    r"""a set of named values mapping.
-    
+    r"""A set of named values mapping.
+
     :param subcon: the subcon to map
-    :param \*\*kw: - keyword arguments which serve as the encoding mapping
+    :param \*\*kw: keyword arguments which serve as the encoding mapping
     :param _default_: an optional, keyword-only argument that specifies the
                       default value to use when the mapping is undefined. if not given,
                       and exception is raised when the mapping is undefined. use `Pass` to
@@ -450,8 +450,8 @@ def Enum(subcon, **kw):
     return SymmetricMapping(subcon, kw, kw.pop("_default_", NotImplemented))
 
 def FlagsEnum(subcon, **kw):
-    r"""a set of flag values mapping.
-    
+    r"""A set of flag values mapping.
+
     :param subcon: the subcon to map
     :param \*\*kw: keyword arguments which serve as the encoding mapping
     """
@@ -462,8 +462,8 @@ def FlagsEnum(subcon, **kw):
 # structs
 #===============================================================================
 def AlignedStruct(name, *subcons, **kw):
-    r"""a struct of aligned fields
-    
+    r"""A struct of aligned fields
+
     :param name: the name of the struct
     :param \*subcons: the subcons that make up this structure
     :param \*\*kw: keyword arguments to pass to Aligned: 'modulus' and 'pattern'
@@ -471,16 +471,17 @@ def AlignedStruct(name, *subcons, **kw):
     return Struct(name, *(Aligned(sc, **kw) for sc in subcons))
 
 def BitStruct(name, *subcons):
-    r"""a struct of bitwise fields
+    r"""A struct of bitwise fields
+
     :param name: the name of the struct
     :param \*subcons: the subcons that make up this structure
     """
     return Bitwise(Struct(name, *subcons))
 
 def EmbeddedBitStruct(*subcons):
-    r"""an embedded BitStruct. no name is necessary.
-    
-    :param \*subcons: - the subcons that make up this structure
+    r"""An embedded BitStruct. no name is necessary.
+
+    :param \*subcons: the subcons that make up this structure
     """
     return Bitwise(Embedded(Struct(None, *subcons)))
 
@@ -502,7 +503,7 @@ def String(name, length, encoding=None, padchar=None, paddir="right",
     :param str trim: direction to trim strings; one of "right", "left"
 
     Example::
-    
+
         >>> from construct import String
         >>> String("foo", 5).parse("hello")
         'hello'
@@ -537,7 +538,7 @@ def PascalString(name, length_field=UBInt8("length"), encoding=None):
     :param encoding: encoding (e.g. "utf8") or None for no encoding
 
     Example::
-    
+
         >>> foo = PascalString("foo")
         >>> foo.parse("\x05hello")
         'hello'
@@ -607,9 +608,9 @@ def CString(name, terminators=six.b("\x00"), encoding=None,
 # conditional
 #===============================================================================
 def IfThenElse(name, predicate, then_subcon, else_subcon):
-    """an if-then-else conditional construct: if the predicate indicates True,
+    """An if-then-else conditional construct: if the predicate indicates True,
     `then_subcon` will be used; otherwise `else_subcon`
-    
+
     :param name: the name of the construct
     :param predicate: a function taking the context as an argument and returning True or False
     :param then_subcon: the subcon that will be used if the predicate returns True
@@ -623,9 +624,9 @@ def IfThenElse(name, predicate, then_subcon, else_subcon):
     )
 
 def If(predicate, subcon, elsevalue = None):
-    """an if-then conditional construct: if the predicate indicates True,
+    """An if-then conditional construct: if the predicate indicates True,
     subcon will be used; otherwise, `elsevalue` will be returned instead.
-    
+
     :param predicate: a function taking the context as an argument and returning True or False
     :param subcon: the subcon that will be used if the predicate returns True
     :param elsevalue: the value that will be used should the predicate return False.
@@ -642,8 +643,8 @@ def If(predicate, subcon, elsevalue = None):
 # misc
 #===============================================================================
 def OnDemandPointer(offsetfunc, subcon, force_build = True):
-    """an on-demand pointer.
-    
+    """An on-demand pointer.
+
     :param offsetfunc: a function taking the context as an argument and returning
                        the absolute stream position
     :param subcon: the subcon that will be parsed from the `offsetfunc()` stream position on demand
@@ -655,11 +656,11 @@ def OnDemandPointer(offsetfunc, subcon, force_build = True):
     )
 
 def Magic(data):
-    """a 'magic number' construct. it is used for file signatures, etc., to validate
+    """A 'magic number' construct. it is used for file signatures, etc., to validate
     that the given pattern exists.
-    
+
     Example::
-        
+
         elf_header = Struct("elf_header",
             Magic("\x7fELF"),
             # ...

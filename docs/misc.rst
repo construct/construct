@@ -162,8 +162,9 @@ Terminator
 ----------
 
 Asserts the end of the stream has been reached (so that no more trailing data
-is left unparsed). Note: Terminator is a singleton object. Do not try to
-"instantiate" it (i.e., ``Terminator()``).
+is left unparsed).
+
+.. note:: Terminator is a singleton object. Do not try to "instantiate" it (i.e., ``Terminator()``).
 
 >>> Terminator.parse("")
 >>> Terminator.parse("x")
@@ -176,8 +177,9 @@ construct.extensions.TerminatorError: end of stream not reached
 Pass
 ----
 
-A do-nothing construct; useful in Switches and Enums. Note: Pass is a
-singleton object. Do not try to "instantiate" it (i.e., ``Pass()``).
+A do-nothing construct; useful in Switches and Enums.
+
+.. note:: Pass is a singleton object. Do not try to "instantiate" it (i.e., ``Pass()``).
 
 >>> print Pass.parse("xyz")
 None
@@ -205,7 +207,9 @@ Peek
 ----
 
 Parses the subconstruct but restores the stream position afterwards
-("peeking"). Note: works only with seekable streams (in-memory and files).
+("peeking").
+
+.. note:: Works only with seekable streams (in-memory and files).
 
 >>> foo = Struct("foo",
 ...     Byte("a"),
@@ -222,8 +226,9 @@ Union
 Treats the same data as multiple constructs (similar to C's union statement).
 When building, each subconstruct parses the same data (so you can "look" at
 the data in multiple views); when writing, the first subconstruct is used to
-build the final result. Note: works only with seekable streams (in-memory and
-files).
+build the final result.
+
+.. note:: Works only with seekable streams (in-memory and files).
 
 >>> foo = Union("foo",
 ...     UBInt32("a"),
