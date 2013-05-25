@@ -5,10 +5,18 @@ from construct import *
 import six
 from binascii import unhexlify
 
+try:
+    bytes
+except NameError:
+    bytes = str
+
 
 class IpAddressAdapter(Adapter):
     def _encode(self, obj, context):
-        return bytes(int(b) for b in obj.split("."))
+        if bytes is str:
+            return "".join(chr(int(b)) for b in obj.split("."))
+        else:
+            return bytes(int(b) for b in obj.split("."))
     def _decode(self, obj, context):
         if bytes is str:
             return ".".join(str(ord(b)) for b in obj)
