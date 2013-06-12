@@ -802,7 +802,7 @@ class Switch(Construct):
 
     :param name: the name of the construct
     :param keyfunc: a function that takes the context and returns a key, which
-                    will ne used to choose the relevant case.
+                    will be used to choose the relevant case.
     :param cases: a dictionary mapping keys to constructs. the keys can be any
                   values that may be returned by keyfunc.
     :param default: a default value to use when the key is not found in the cases.
