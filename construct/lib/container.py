@@ -122,7 +122,7 @@ class FlagsContainer(Container):
         attrs = []
         ind = indentation * nesting
         for k in self.keys():
-            v = self.__dict__[k]
+            v = getattr(self, k)
             if not k.startswith("_") and v:
                 attrs.append(ind + k)
         if not attrs:
