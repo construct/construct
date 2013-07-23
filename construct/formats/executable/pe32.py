@@ -266,7 +266,7 @@ optional_header = Struct("optional_header",
         EFI_RUNTIME_DRIVER = 12,
         EFI_ROM = 13,
         XBOX = 14,
-        _defualt_ = Pass
+        _default_ = Pass
     ),
     FlagsEnum(ULInt16("dll_characteristics"),
         NO_BIND = 0x0800,
