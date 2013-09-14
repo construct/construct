@@ -263,10 +263,15 @@ def PrefixedArray(subcon, length_field = UBInt8("length")):
     :param subcon: the subcon to be repeated
     :param length_field: a construct returning an integer
     """
+    def _length(ctx):
+      if issubclass(ctx.__class__, (list, tuple)):
+        return len(ctx)
+      return ctx[length_field.name]
+
     return LengthValueAdapter(
         Sequence(subcon.name,
             length_field,
-            Array(lambda ctx: ctx[length_field.name], subcon),
+            Array(_length, subcon),
             nested = False
         )
     )

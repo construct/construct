@@ -261,6 +261,7 @@ all_tests = [
 
     [PrefixedArray(UBInt8("array"), UBInt8("count")).parse, six.b("\x03\x01\x01\x01"), [1,1,1], None],
     [PrefixedArray(UBInt8("array"), UBInt8("count")).parse, six.b("\x03\x01\x01"), None, ArrayError],
+    [PrefixedArray(UBInt8("array"), UBInt8("count")).sizeof, [1,1,1], 4, None],
     [PrefixedArray(UBInt8("array"), UBInt8("count")).build, [1,1,1], six.b("\x03\x01\x01\x01"), None],
     
     [IfThenElse("ifthenelse", lambda ctx: True, UBInt8("then"), UBInt16("else")).parse, 
