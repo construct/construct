@@ -17,7 +17,7 @@ def hexdump(data, linesize):
         fmt = "%%08X   %%-%ds   %%s"
     fmt = fmt % (3 * linesize - 1,)
     for i in range(0, len(data), linesize):
-        line = data[i : i + linesize]
+        line = data[i: i + linesize]
         hextext = " ".join('%02x' % byte2int(b) for b in line)
         rawtext = "".join(_printable[byte2int(b)] for b in line)
         prettylines.append(fmt % (i, str(hextext), str(rawtext)))
@@ -29,18 +29,19 @@ try:
 except NameError:
     basecls = str
 
+
 class HexString(basecls):
     """
     Represents bytes that will be hex-dumped to a string when its string
     representation is requested.
     """
-    def __init__(self, data, linesize = 16):
+    def __init__(self, data, linesize=16):
         self.linesize = linesize
+
     def __new__(cls, data, *args, **kwargs):
         return basecls.__new__(cls, data)
+
     def __str__(self):
         if not self:
             return "''"
         return "\n" + "\n".join(hexdump(self, self.linesize))
-
-

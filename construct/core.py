@@ -10,33 +10,55 @@ try:
 except NameError:
     bytes = str
 
-#===============================================================================
+# ==============================================================================
 # exceptions
-#===============================================================================
+# ==============================================================================
+
+
 class ConstructError(Exception):
     pass
+
+
 class FieldError(ConstructError):
     pass
+
+
 class SizeofError(ConstructError):
     pass
+
+
 class AdaptationError(ConstructError):
     pass
+
+
 class ArrayError(ConstructError):
     pass
+
+
 class RangeError(ConstructError):
     pass
+
+
 class SwitchError(ConstructError):
     pass
+
+
 class SelectError(ConstructError):
     pass
+
+
 class TerminatorError(ConstructError):
     pass
+
+
 class OverwriteError(ValueError):
     pass
 
-#===============================================================================
+# ==============================================================================
 # abstract constructs
-#===============================================================================
+# ==============================================================================
+
+
 class Construct(object):
     """
     The mother of all constructs.
@@ -92,13 +114,14 @@ class Construct(object):
     the context for each iteration, which is necessary for OnDemand parsing.
     """
 
-    FLAG_COPY_CONTEXT          = 0x0001
-    FLAG_DYNAMIC               = 0x0002
-    FLAG_EMBED                 = 0x0004
-    FLAG_NESTING               = 0x0008
+    FLAG_COPY_CONTEXT = 0x0001
+    FLAG_DYNAMIC = 0x0002
+    FLAG_EMBED = 0x0004
+    FLAG_NESTING = 0x0008
 
     __slots__ = ["name", "conflags"]
-    def __init__(self, name, flags = 0):
+
+    def __init__(self, name, flags=0):
         if name is not None:
             if not isinstance(name, six.string_types):
                 raise TypeError("name must be a string or None", name)
@@ -116,7 +139,6 @@ class Construct(object):
 
         :param int flag: flag to set; may be OR'd combination of flags
         """
-
         self.conflags |= flag
 
     def _clear_flag(self, flag):
@@ -125,14 +147,12 @@ class Construct(object):
 
         :param int flag: flag to clear; may be OR'd combination of flags
         """
-
         self.conflags &= ~flag
 
     def _inherit_flags(self, *subcons):
         """
         Pull flags from subconstructs.
         """
-
         for sc in subcons:
             self._set_flag(sc.conflags)
 
@@ -142,14 +162,12 @@ class Construct(object):
 
         :param int flag: flag to check
         """
-
         return bool(self.conflags & flag)
 
     def __getstate__(self):
         """
         Obtain a dictionary representing this construct's state.
         """
-
         attrs = {}
         if hasattr(self, "__dict__"):
             attrs.update(self.__dict__)
@@ -184,7 +202,6 @@ class Construct(object):
         Strings, buffers, memoryviews, and other complete buffers can be
         parsed with this method.
         """
-
         return self.parse_stream(BytesIO(data))
 
     def parse_stream(self, stream):
@@ -194,14 +211,12 @@ class Construct(object):
         Files, pipes, sockets, and other streaming sources of data are handled
         by this method.
         """
-
         return self._parse(stream, Container())
 
     def _parse(self, stream, context):
         """
         Override me in your subclass.
         """
-
         raise NotImplementedError()
 
     def build(self, obj):
@@ -222,7 +237,6 @@ class Construct(object):
         """
         Override me in your subclass.
         """
-
         raise NotImplementedError()
 
     def sizeof(self, context=None):
@@ -238,7 +252,6 @@ class Construct(object):
         :returns: int of the length of this construct
         :raises SizeofError: the size could not be determined
         """
-
         if context is None:
             context = Container()
         try:
@@ -250,8 +263,8 @@ class Construct(object):
         """
         Override me in your subclass.
         """
-
         raise SizeofError("Raw Constructs have no size!")
+
 
 class Subconstruct(Construct):
     """
@@ -262,17 +275,21 @@ class Subconstruct(Construct):
 
     :param subcon: the construct to wrap
     """
-
     __slots__ = ["subcon"]
+
     def __init__(self, subcon):
         Construct.__init__(self, subcon.name, subcon.conflags)
         self.subcon = subcon
+
     def _parse(self, stream, context):
         return self.subcon._parse(stream, context)
+
     def _build(self, obj, stream, context):
         self.subcon._build(obj, stream, context)
+
     def _sizeof(self, context):
         return self.subcon._sizeof(context)
+
 
 class Adapter(Subconstruct):
     """
@@ -282,21 +299,24 @@ class Adapter(Subconstruct):
 
     :param subcon: the construct to wrap
     """
-
     __slots__ = []
+
     def _parse(self, stream, context):
         return self._decode(self.subcon._parse(stream, context), context)
+
     def _build(self, obj, stream, context):
         self.subcon._build(self._encode(obj, context), stream, context)
+
     def _decode(self, obj, context):
         raise NotImplementedError()
+
     def _encode(self, obj, context):
         raise NotImplementedError()
 
 
-#===============================================================================
+# ==============================================================================
 # Fields
-#===============================================================================
+# ==============================================================================
 def _read_stream(stream, length):
     if length < 0:
         raise ValueError("length must be >= 0", length)
@@ -305,12 +325,14 @@ def _read_stream(stream, length):
         raise FieldError("expected %d, found %d" % (length, len(data)))
     return data
 
+
 def _write_stream(stream, length, data):
     if length < 0:
         raise ValueError("length must be >= 0", length)
     if len(data) != length:
         raise FieldError("expected %d, found %d" % (length, len(data)))
     stream.write(data)
+
 
 class StaticField(Construct):
     """
@@ -319,17 +341,22 @@ class StaticField(Construct):
     :param name: field name
     :param length: number of bytes in the field
     """
-
     __slots__ = ["length"]
+
     def __init__(self, name, length):
         Construct.__init__(self, name)
         self.length = length
+
     def _parse(self, stream, context):
         return _read_stream(stream, self.length)
+
     def _build(self, obj, stream, context):
-        _write_stream(stream, self.length, bchr(obj) if isinstance(obj, int) else obj)
+        _write_stream(stream, self.length, bchr(obj) if isinstance(obj, int)
+                      else obj)
+
     def _sizeof(self, context):
         return self.length
+
 
 class FormatField(StaticField):
     """
@@ -341,33 +368,38 @@ class FormatField(StaticField):
     :param endianness: format endianness string; one of "<", ">", or "="
     :param format: a single format character
     """
-
     __slots__ = ["packer"]
+
     def __init__(self, name, endianity, format):
         if endianity not in (">", "<", "="):
             raise ValueError("endianity must be be '=', '<', or '>'",
-                endianity)
+                             endianity)
         if len(format) != 1:
             raise ValueError("must specify one and only one format char")
         self.packer = Packer(endianity + format)
         StaticField.__init__(self, name, self.packer.size)
+
     def __getstate__(self):
         attrs = StaticField.__getstate__(self)
         attrs["packer"] = attrs["packer"].format
         return attrs
+
     def __setstate__(self, attrs):
         attrs["packer"] = Packer(attrs["packer"])
         return StaticField.__setstate__(self, attrs)
+
     def _parse(self, stream, context):
         try:
             return self.packer.unpack(_read_stream(stream, self.length))[0]
         except Exception:
             raise FieldError(sys.exc_info()[1])
+
     def _build(self, obj, stream, context):
         try:
             _write_stream(stream, self.length, self.packer.pack(obj))
         except Exception:
             raise FieldError(sys.exc_info()[1])
+
 
 class MetaField(Construct):
     r"""
@@ -375,7 +407,8 @@ class MetaField(Construct):
     function.
 
     :param name: name of the field
-    :param lengthfunc: callable that takes a context and returns length as an int
+    :param lengthfunc: callable that takes a context and returns length as an
+                       int
 
     Example::
 
@@ -388,23 +421,26 @@ class MetaField(Construct):
         >>> foo.parse("\x04ABCD")
         Container(data = 'ABCD', length = 4)
     """
-
     __slots__ = ["lengthfunc"]
+
     def __init__(self, name, lengthfunc):
         Construct.__init__(self, name)
         self.lengthfunc = lengthfunc
         self._set_flag(self.FLAG_DYNAMIC)
+
     def _parse(self, stream, context):
         return _read_stream(stream, self.lengthfunc(context))
+
     def _build(self, obj, stream, context):
         _write_stream(stream, self.lengthfunc(context), obj)
+
     def _sizeof(self, context):
         return self.lengthfunc(context)
 
 
-#===============================================================================
+# ==============================================================================
 # arrays and repeaters
-#===============================================================================
+# ==============================================================================
 class MetaArray(Subconstruct):
     """
     An array (repeater) of a meta-count. The array will iterate exactly
@@ -412,10 +448,11 @@ class MetaArray(Subconstruct):
 
     .. seealso::
 
-        The :func:`~construct.macros.Array` macro, :func:`Range` and :func:`RepeatUntil`.
+        The :func:`~construct.macros.Array` macro, :func:`Range` and
+        :func:`RepeatUntil`.
 
-    :param countfunc: a function that takes the context as a parameter and returns
-                      the number of elements of the array (count)
+    :param countfunc: a function that takes the context as a parameter and
+                      returns the number of elements of the array (count)
     :param subcon: the subcon to repeat ``countfunc()`` times
 
     Example::
@@ -423,11 +460,13 @@ class MetaArray(Subconstruct):
         MetaArray(lambda ctx: 5, UBInt8("foo"))
     """
     __slots__ = ["countfunc"]
+
     def __init__(self, countfunc, subcon):
         Subconstruct.__init__(self, subcon)
         self.countfunc = countfunc
         self._clear_flag(self.FLAG_COPY_CONTEXT)
         self._set_flag(self.FLAG_DYNAMIC)
+
     def _parse(self, stream, context):
         obj = ListContainer()
         c = 0
@@ -442,8 +481,10 @@ class MetaArray(Subconstruct):
                     obj.append(self.subcon._parse(stream, context))
                     c += 1
         except ConstructError:
-            raise ArrayError("expected %d, found %d" % (count, c), sys.exc_info()[1])
+            raise ArrayError("expected %d, found %d" % (count, c),
+                             sys.exc_info()[1])
         return obj
+
     def _build(self, obj, stream, context):
         count = self.countfunc(context)
         if len(obj) != count:
@@ -454,8 +495,10 @@ class MetaArray(Subconstruct):
         else:
             for subobj in obj:
                 self.subcon._build(subobj, stream, context)
+
     def _sizeof(self, context):
         return self.subcon._sizeof(context) * self.countfunc(context)
+
 
 class Range(Subconstruct):
     r"""
@@ -468,9 +511,9 @@ class Range(Subconstruct):
         :func:`~construct.macros.OptionalGreedyRange` macros.
 
     The general-case repeater. Repeats the given unit for at least ``mincount``
-    times, and up to ``maxcount`` times. If an exception occurs (EOF, validation
-    error), the repeater exits. If less than ``mincount`` units have been
-    successfully parsed, a RangeError is raised.
+    times, and up to ``maxcount`` times. If an exception occurs (EOF,
+    validation error), the repeater exits. If less than ``mincount`` units have
+    been successfully parsed, a RangeError is raised.
 
     .. note:: This object requires a seekable stream for parsing.
 
@@ -504,14 +547,15 @@ class Range(Subconstruct):
           ...
         construct.core.RangeError: expected 3..7, found 8
     """
-
     __slots__ = ["mincount", "maxcout"]
+
     def __init__(self, mincount, maxcout, subcon):
         Subconstruct.__init__(self, subcon)
         self.mincount = mincount
         self.maxcout = maxcout
         self._clear_flag(self.FLAG_COPY_CONTEXT)
         self._set_flag(self.FLAG_DYNAMIC)
+
     def _parse(self, stream, context):
         obj = ListContainer()
         c = 0
@@ -529,13 +573,15 @@ class Range(Subconstruct):
         except ConstructError:
             if c < self.mincount:
                 raise RangeError("expected %d to %d, found %d" %
-                    (self.mincount, self.maxcout, c), sys.exc_info()[1])
+                                 (self.mincount, self.maxcout, c),
+                                 sys.exc_info()[1])
             stream.seek(pos)
         return obj
+
     def _build(self, obj, stream, context):
         if len(obj) < self.mincount or len(obj) > self.maxcout:
             raise RangeError("expected %d to %d, found %d" %
-                (self.mincount, self.maxcout, len(obj)))
+                             (self.mincount, self.maxcout, len(obj)))
         cnt = 0
         try:
             if self.subcon.conflags & self.FLAG_COPY_CONTEXT:
@@ -553,9 +599,12 @@ class Range(Subconstruct):
         except ConstructError:
             if cnt < self.mincount:
                 raise RangeError("expected %d to %d, found %d" %
-                    (self.mincount, self.maxcout, len(obj)), sys.exc_info()[1])
+                                 (self.mincount, self.maxcout, len(obj)),
+                                 sys.exc_info()[1])
+
     def _sizeof(self, context):
         raise SizeofError("can't calculate size")
+
 
 class RepeatUntil(Subconstruct):
     r"""
@@ -563,8 +612,9 @@ class RepeatUntil(Subconstruct):
     the last element (which caused the repeat to exit) is included in the
     return value.
 
-    :param predicate: a predicate function that takes (obj, context) and returns
-      True if the stop-condition is met, or False to continue.
+    :param predicate: a predicate function that takes (obj, context) and
+                      returns True if the stop-condition is met,
+                      or False to continue.
     :param subcon: the subcon to repeat.
 
     Example::
@@ -575,11 +625,13 @@ class RepeatUntil(Subconstruct):
         )
     """
     __slots__ = ["predicate"]
+
     def __init__(self, predicate, subcon):
         Subconstruct.__init__(self, subcon)
         self.predicate = predicate
         self._clear_flag(self.FLAG_COPY_CONTEXT)
         self._set_flag(self.FLAG_DYNAMIC)
+
     def _parse(self, stream, context):
         obj = []
         try:
@@ -598,6 +650,7 @@ class RepeatUntil(Subconstruct):
         except ConstructError:
             raise ArrayError("missing terminator", sys.exc_info()[1])
         return obj
+
     def _build(self, obj, stream, context):
         terminated = False
         if self.subcon.conflags & self.FLAG_COPY_CONTEXT:
@@ -608,20 +661,21 @@ class RepeatUntil(Subconstruct):
                     break
         else:
             for subobj in obj:
-                #subobj = bchr(subobj)  -- WTF is that for?!
+                # subobj = bchr(subobj)  -- WTF is that for?!
                 self.subcon._build(subobj, stream, context.__copy__())
                 if self.predicate(subobj, context):
                     terminated = True
                     break
         if not terminated:
             raise ArrayError("missing terminator")
+
     def _sizeof(self, context):
         raise SizeofError("can't calculate size")
 
 
-#===============================================================================
+# ==============================================================================
 # structures and sequences
-#===============================================================================
+# ==============================================================================
 class Struct(Construct):
     """
     A sequence of named constructs, similar to structs in C. The elements are
@@ -632,8 +686,9 @@ class Struct(Construct):
     :param name: the name of the structure
     :param subcons: a sequence of subconstructs that make up this structure.
     :param nested: a keyword-only argument that indicates whether this struct
-                   creates a nested context. The default is True. This parameter is
-                   considered "advanced usage", and may be removed in the future.
+                   creates a nested context. The default is True.
+                   This parameter is considered "advanced usage",
+                   and may be removed in the future.
 
     Example::
 
@@ -645,15 +700,18 @@ class Struct(Construct):
         )
     """
     __slots__ = ["subcons", "nested", "allow_overwrite"]
+
     def __init__(self, name, *subcons, **kw):
         self.nested = kw.pop("nested", True)
         self.allow_overwrite = kw.pop("allow_overwrite", False)
         if kw:
-            raise TypeError("the only keyword argument accepted is 'nested'", kw)
+            raise TypeError("the only keyword argument accepted is 'nested'",
+                            kw)
         Construct.__init__(self, name)
         self.subcons = subcons
         self._inherit_flags(*subcons)
         self._clear_flag(self.FLAG_EMBED)
+
     def _parse(self, stream, context):
         if "<obj>" in context:
             obj = context["<obj>"]
@@ -661,7 +719,7 @@ class Struct(Construct):
         else:
             obj = Container()
             if self.nested:
-                context = Container(_ = context)
+                context = Container(_=context)
         for sc in self.subcons:
             if sc.conflags & self.FLAG_EMBED:
                 context["<obj>"] = obj
@@ -670,15 +728,18 @@ class Struct(Construct):
                 subobj = sc._parse(stream, context)
                 if sc.name is not None:
                     if sc.name in obj and not self.allow_overwrite:
-                        raise OverwriteError("%r would be overwritten but allow_overwrite is False" % (sc.name,))
+                        raise OverwriteError("%r would be overwritten but "
+                                             "allow_overwrite is False" %
+                                             (sc.name,))
                     obj[sc.name] = subobj
                     context[sc.name] = subobj
         return obj
+
     def _build(self, obj, stream, context):
         if "<unnested>" in context:
             del context["<unnested>"]
         elif self.nested:
-            context = Container(_ = context)
+            context = Container(_=context)
         for sc in self.subcons:
             if sc.conflags & self.FLAG_EMBED:
                 context["<unnested>"] = True
@@ -689,10 +750,12 @@ class Struct(Construct):
                 subobj = getattr(obj, sc.name)
                 context[sc.name] = subobj
             sc._build(subobj, stream, context)
+
     def _sizeof(self, context):
-        #if self.nested:
-        #    context = Container(_ = context)
+        # if self.nested:
+        #     context = Container(_ = context)
         return sum(sc._sizeof(context) for sc in self.subcons)
+
 
 class Sequence(Struct):
     """
@@ -704,8 +767,9 @@ class Sequence(Struct):
     :param name: the name of the structure
     :param subcons: a sequence of subconstructs that make up this structure.
     :param nested: a keyword-only argument that indicates whether this struct
-                   creates a nested context. The default is True. This parameter is
-                   considered "advanced usage", and may be removed in the future.
+                   creates a nested context. The default is True.
+                   This parameter is considered "advanced usage",
+                   and may be removed in the future.
 
     Example::
 
@@ -717,6 +781,7 @@ class Sequence(Struct):
         )
     """
     __slots__ = []
+
     def _parse(self, stream, context):
         if "<obj>" in context:
             obj = context["<obj>"]
@@ -724,7 +789,7 @@ class Sequence(Struct):
         else:
             obj = ListContainer()
             if self.nested:
-                context = Container(_ = context)
+                context = Container(_=context)
         for sc in self.subcons:
             if sc.conflags & self.FLAG_EMBED:
                 context["<obj>"] = obj
@@ -735,11 +800,12 @@ class Sequence(Struct):
                     obj.append(subobj)
                     context[sc.name] = subobj
         return obj
+
     def _build(self, obj, stream, context):
         if "<unnested>" in context:
             del context["<unnested>"]
         elif self.nested:
-            context = Container(_ = context)
+            context = Container(_=context)
         objiter = iter(obj)
         for sc in self.subcons:
             if sc.conflags & self.FLAG_EMBED:
@@ -752,6 +818,7 @@ class Sequence(Struct):
                 context[sc.name] = subobj
             sc._build(subobj, stream, context)
 
+
 class Union(Construct):
     """
     a set of overlapping fields (like unions in C). when parsing,
@@ -759,7 +826,8 @@ class Union(Construct):
     (called "master") is used.
 
     :param name: the name of the union
-    :param master: the master subcon, i.e., the subcon used for building and calculating the total size
+    :param master: the master subcon, i.e., the subcon used for building and
+                   calculating the total size
     :param subcons: additional subcons
 
     Example::
@@ -776,22 +844,27 @@ class Union(Construct):
         )
     """
     __slots__ = ["parser", "builder"]
+
     def __init__(self, name, master, *subcons, **kw):
         Construct.__init__(self, name)
         args = [Peek(sc) for sc in subcons]
         args.append(MetaField(None, lambda ctx: master._sizeof(ctx)))
-        self.parser = Struct(name, Peek(master, perform_build = True), *args)
+        self.parser = Struct(name, Peek(master, perform_build=True), *args)
         self.builder = Struct(name, master)
+
     def _parse(self, stream, context):
         return self.parser._parse(stream, context)
+
     def _build(self, obj, stream, context):
         return self.builder._build(obj, stream, context)
+
     def _sizeof(self, context):
         return self.builder._sizeof(context)
 
-#===============================================================================
+
+# ==============================================================================
 # conditional
-#===============================================================================
+# ==============================================================================
 class Switch(Construct):
     """
     A conditional branch. Switch will choose the case to follow based on
@@ -805,8 +878,9 @@ class Switch(Construct):
                     will be used to choose the relevant case.
     :param cases: a dictionary mapping keys to constructs. the keys can be any
                   values that may be returned by keyfunc.
-    :param default: a default value to use when the key is not found in the cases.
-                    if not supplied, an exception will be raised when the key is not found.
+    :param default: a default value to use when the key is not found in the
+                    cases. if not supplied, an exception will be raised when
+                    the key is not found.
                     You can use the builtin construct Pass for 'do-nothing'.
     :param include_key: whether or not to include the key in the return value
                         of parsing. defualt is False.
@@ -828,16 +902,18 @@ class Switch(Construct):
     class NoDefault(Construct):
         def _parse(self, stream, context):
             raise SwitchError("no default case defined")
+
         def _build(self, obj, stream, context):
             raise SwitchError("no default case defined")
+
         def _sizeof(self, context):
             raise SwitchError("no default case defined")
     NoDefault = NoDefault("No default value specified")
 
     __slots__ = ["subcons", "keyfunc", "cases", "default", "include_key"]
 
-    def __init__(self, name, keyfunc, cases, default = NoDefault,
-                 include_key = False):
+    def __init__(self, name, keyfunc, cases, default=NoDefault,
+                 include_key=False):
         Construct.__init__(self, name)
         self._inherit_flags(*cases.values())
         self.keyfunc = keyfunc
@@ -846,6 +922,7 @@ class Switch(Construct):
         self.include_key = include_key
         self._inherit_flags(*cases.values())
         self._set_flag(self.FLAG_DYNAMIC)
+
     def _parse(self, stream, context):
         key = self.keyfunc(context)
         obj = self.cases.get(key, self.default)._parse(stream, context)
@@ -853,6 +930,7 @@ class Switch(Construct):
             return key, obj
         else:
             return obj
+
     def _build(self, obj, stream, context):
         if self.include_key:
             key, obj = obj
@@ -860,9 +938,11 @@ class Switch(Construct):
             key = self.keyfunc(context)
         case = self.cases.get(key, self.default)
         case._build(obj, stream, context)
+
     def _sizeof(self, context):
         case = self.cases.get(self.keyfunc(context), self.default)
         return case._sizeof(context)
+
 
 class Select(Construct):
     """
@@ -874,8 +954,8 @@ class Select(Construct):
     :param name: the name of the construct
     :param subcons: the subcons to try (order-sensitive)
     :param include_name: a keyword only argument, indicating whether to include
-                         the name of the selected subcon in the return value of parsing. default
-                         is false.
+                         the name of the selected subcon in the return value
+                         of parsing. default is false.
 
     Example::
 
@@ -887,16 +967,18 @@ class Select(Construct):
         )
     """
     __slots__ = ["subcons", "include_name"]
+
     def __init__(self, name, *subcons, **kw):
         include_name = kw.pop("include_name", False)
         if kw:
             raise TypeError("the only keyword argument accepted "
-                "is 'include_name'", kw)
+                            "is 'include_name'", kw)
         Construct.__init__(self, name)
         self.subcons = subcons
         self.include_name = include_name
         self._inherit_flags(*subcons)
         self._set_flag(self.FLAG_DYNAMIC)
+
     def _parse(self, stream, context):
         for sc in self.subcons:
             pos = stream.tell()
@@ -912,6 +994,7 @@ class Select(Construct):
                 else:
                     return obj
         raise SelectError("no subconstruct matched")
+
     def _build(self, obj, stream, context):
         if self.include_name:
             name, obj = obj
@@ -932,13 +1015,14 @@ class Select(Construct):
                     stream.write(stream2.getvalue())
                     return
         raise SelectError("no subconstruct matched", obj)
+
     def _sizeof(self, context):
         raise SizeofError("can't calculate size")
 
 
-#===============================================================================
+# ==============================================================================
 # stream manipulation
-#===============================================================================
+# ==============================================================================
 class Pointer(Subconstruct):
     """
     Changes the stream position to a given offset, where the construction
@@ -950,8 +1034,9 @@ class Pointer(Subconstruct):
 
     .. note:: Requires a seekable stream.
 
-    :param offsetfunc: a function that takes the context and returns an absolute
-                       stream position, where the construction would take place
+    :param offsetfunc: a function that takes the context and returns an
+                       absolute stream position, where the construction
+                       would take place
     :param subcon: the subcon to use at ``offsetfunc()``
 
     Example::
@@ -964,9 +1049,11 @@ class Pointer(Subconstruct):
         )
     """
     __slots__ = ["offsetfunc"]
+
     def __init__(self, offsetfunc, subcon):
         Subconstruct.__init__(self, subcon)
         self.offsetfunc = offsetfunc
+
     def _parse(self, stream, context):
         newpos = self.offsetfunc(context)
         origpos = stream.tell()
@@ -974,14 +1061,17 @@ class Pointer(Subconstruct):
         obj = self.subcon._parse(stream, context)
         stream.seek(origpos)
         return obj
+
     def _build(self, obj, stream, context):
         newpos = self.offsetfunc(context)
         origpos = stream.tell()
         stream.seek(newpos, 2 if newpos < 0 else 0)
         self.subcon._build(obj, stream, context)
         stream.seek(origpos)
+
     def _sizeof(self, context):
         return 0
+
 
 class Peek(Subconstruct):
     """
@@ -993,16 +1083,19 @@ class Peek(Subconstruct):
 
     :param subcon: the subcon to peek at
     :param perform_build: whether or not to perform building. by default this
-                          parameter is set to False, meaning building is a no-op.
+                          parameter is set to False, meaning building is a
+                          no-op.
 
     Example::
 
         Peek(UBInt8("foo"))
     """
     __slots__ = ["perform_build"]
-    def __init__(self, subcon, perform_build = False):
+
+    def __init__(self, subcon, perform_build=False):
         Subconstruct.__init__(self, subcon)
         self.perform_build = perform_build
+
     def _parse(self, stream, context):
         pos = stream.tell()
         try:
@@ -1011,11 +1104,14 @@ class Peek(Subconstruct):
             pass
         finally:
             stream.seek(pos)
+
     def _build(self, obj, stream, context):
         if self.perform_build:
             self.subcon._build(obj, stream, context)
+
     def _sizeof(self, context):
         return 0
+
 
 class OnDemand(Subconstruct):
     """
@@ -1033,24 +1129,29 @@ class OnDemand(Subconstruct):
 
     :param subcon: the subcon to read/write on demand
     :param advance_stream: whether or not to advance the stream position. by
-                           default this is True, but if subcon is a pointer, this should be False.
+                           default this is True, but if subcon is a pointer,
+                           this should be False.
     :param force_build: whether or not to force build. If set to False, and the
-                        LazyContainer has not been demaned, building is a no-op.
+                        LazyContainer has not been demaned, building is a
+                        no-op.
 
     Example::
 
         OnDemand(Array(10000, UBInt8("foo"))
     """
     __slots__ = ["advance_stream", "force_build"]
-    def __init__(self, subcon, advance_stream = True, force_build = True):
+
+    def __init__(self, subcon, advance_stream=True, force_build=True):
         Subconstruct.__init__(self, subcon)
         self.advance_stream = advance_stream
         self.force_build = force_build
+
     def _parse(self, stream, context):
         obj = LazyContainer(self.subcon, stream, stream.tell(), context)
         if self.advance_stream:
             stream.seek(self.subcon._sizeof(context), 1)
         return obj
+
     def _build(self, obj, stream, context):
         if not isinstance(obj, LazyContainer):
             self.subcon._build(obj, stream, context)
@@ -1058,6 +1159,7 @@ class OnDemand(Subconstruct):
             self.subcon._build(obj.value, stream, context)
         elif self.advance_stream:
             stream.seek(self.subcon._sizeof(context), 1)
+
 
 class Buffered(Subconstruct):
     """
@@ -1085,15 +1187,18 @@ class Buffered(Subconstruct):
         )
     """
     __slots__ = ["encoder", "decoder", "resizer"]
+
     def __init__(self, subcon, decoder, encoder, resizer):
         Subconstruct.__init__(self, subcon)
         self.encoder = encoder
         self.decoder = decoder
         self.resizer = resizer
+
     def _parse(self, stream, context):
         data = _read_stream(stream, self._sizeof(context))
         stream2 = BytesIO(self.decoder(data))
         return self.subcon._parse(stream2, context)
+
     def _build(self, obj, stream, context):
         size = self._sizeof(context)
         stream2 = BytesIO()
@@ -1101,8 +1206,10 @@ class Buffered(Subconstruct):
         data = self.encoder(stream2.getvalue())
         assert len(data) == size
         _write_stream(stream, self._sizeof(context), data)
+
     def _sizeof(self, context):
         return self.resizer(self.subcon._sizeof(context))
+
 
 class Restream(Subconstruct):
     """
@@ -1135,27 +1242,31 @@ class Restream(Subconstruct):
         )
     """
     __slots__ = ["stream_reader", "stream_writer", "resizer"]
+
     def __init__(self, subcon, stream_reader, stream_writer, resizer):
         Subconstruct.__init__(self, subcon)
         self.stream_reader = stream_reader
         self.stream_writer = stream_writer
         self.resizer = resizer
+
     def _parse(self, stream, context):
         stream2 = self.stream_reader(stream)
         obj = self.subcon._parse(stream2, context)
         stream2.close()
         return obj
+
     def _build(self, obj, stream, context):
         stream2 = self.stream_writer(stream)
         self.subcon._build(obj, stream2, context)
         stream2.close()
+
     def _sizeof(self, context):
         return self.resizer(self.subcon._sizeof(context))
 
 
-#===============================================================================
+# ==============================================================================
 # miscellaneous
-#===============================================================================
+# ==============================================================================
 class Reconfig(Subconstruct):
     """
     Reconfigures a subconstruct. Reconfig can be used to change the name and
@@ -1171,11 +1282,13 @@ class Reconfig(Subconstruct):
         Reconfig("foo", UBInt8("bar"))
     """
     __slots__ = []
-    def __init__(self, name, subcon, setflags = 0, clearflags = 0):
+
+    def __init__(self, name, subcon, setflags=0, clearflags=0):
         Construct.__init__(self, name, subcon.conflags)
         self.subcon = subcon
         self._set_flag(setflags)
         self._clear_flag(clearflags)
+
 
 class Anchor(Construct):
     """
@@ -1198,19 +1311,24 @@ class Anchor(Construct):
     """
 
     __slots__ = []
+
     def _parse(self, stream, context):
         return stream.tell()
+
     def _build(self, obj, stream, context):
         context[self.name] = stream.tell()
+
     def _sizeof(self, context):
         return 0
+
 
 class Value(Construct):
     """
     A computed value.
 
     :param name: the name of the value
-    :param func: a function that takes the context and return the computed value
+    :param func: a function that takes the context and return the computed
+                 value
 
     Example::
 
@@ -1221,51 +1339,56 @@ class Value(Construct):
         )
     """
     __slots__ = ["func"]
+
     def __init__(self, name, func):
         Construct.__init__(self, name)
         self.func = func
         self._set_flag(self.FLAG_DYNAMIC)
+
     def _parse(self, stream, context):
         return self.func(context)
+
     def _build(self, obj, stream, context):
         context[self.name] = self.func(context)
+
     def _sizeof(self, context):
         return 0
 
-#class Dynamic(Construct):
-#    """
-#    Dynamically creates a construct and uses it for parsing and building.
-#    This allows you to create change the construction tree on the fly.
-#    Deprecated.
+# class Dynamic(Construct):
+#     """
+#     Dynamically creates a construct and uses it for parsing and building.
+#     This allows you to create change the construction tree on the fly.
+#     Deprecated.
 #
-#    Parameters:
-#    * name - the name of the construct
-#    * factoryfunc - a function that takes the context and returns a new
-#      construct object which will be used for parsing and building.
+#     Parameters:
+#     * name - the name of the construct
+#     * factoryfunc - a function that takes the context and returns a new
+#       construct object which will be used for parsing and building.
 #
-#    Example:
-#    def factory(ctx):
-#        if ctx.bar == 8:
-#            return UBInt8("spam")
-#        if ctx.bar == 9:
-#            return String("spam", 9)
+#     Example:
+#     def factory(ctx):
+#         if ctx.bar == 8:
+#             return UBInt8("spam")
+#         if ctx.bar == 9:
+#             return String("spam", 9)
 #
-#    Struct("foo",
-#        UBInt8("bar"),
-#        Dynamic("spam", factory),
-#    )
-#    """
-#    __slots__ = ["factoryfunc"]
-#    def __init__(self, name, factoryfunc):
-#        Construct.__init__(self, name, self.FLAG_COPY_CONTEXT)
-#        self.factoryfunc = factoryfunc
-#        self._set_flag(self.FLAG_DYNAMIC)
-#    def _parse(self, stream, context):
-#        return self.factoryfunc(context)._parse(stream, context)
-#    def _build(self, obj, stream, context):
-#        return self.factoryfunc(context)._build(obj, stream, context)
-#    def _sizeof(self, context):
-#        return self.factoryfunc(context)._sizeof(context)
+#     Struct("foo",
+#         UBInt8("bar"),
+#         Dynamic("spam", factory),
+#     )
+#     """
+#     __slots__ = ["factoryfunc"]
+#     def __init__(self, name, factoryfunc):
+#         Construct.__init__(self, name, self.FLAG_COPY_CONTEXT)
+#         self.factoryfunc = factoryfunc
+#         self._set_flag(self.FLAG_DYNAMIC)
+#     def _parse(self, stream, context):
+#         return self.factoryfunc(context)._parse(stream, context)
+#     def _build(self, obj, stream, context):
+#         return self.factoryfunc(context)._build(obj, stream, context)
+#     def _sizeof(self, context):
+#         return self.factoryfunc(context)._sizeof(context)
+
 
 class LazyBound(Construct):
     """
@@ -1273,7 +1396,8 @@ class LazyBound(Construct):
     references (linked-lists, expression trees, etc.).
 
     :param name: the name of the construct
-    :param bindfunc: the function (called without arguments) returning the bound construct
+    :param bindfunc: the function (called without arguments) returning the
+                     bound construct
 
     Example::
 
@@ -1283,22 +1407,27 @@ class LazyBound(Construct):
         )
     """
     __slots__ = ["bindfunc", "bound"]
+
     def __init__(self, name, bindfunc):
         Construct.__init__(self, name)
         self.bound = None
         self.bindfunc = bindfunc
+
     def _parse(self, stream, context):
         if self.bound is None:
             self.bound = self.bindfunc()
         return self.bound._parse(stream, context)
+
     def _build(self, obj, stream, context):
         if self.bound is None:
             self.bound = self.bindfunc()
         self.bound._build(obj, stream, context)
+
     def _sizeof(self, context):
         if self.bound is None:
             self.bound = self.bindfunc()
         return self.bound._sizeof(context)
+
 
 class Pass(Construct):
     """
@@ -1307,17 +1436,21 @@ class Pass(Construct):
 
     .. seealso:: :func:`Switch` and the :func:`~construct.macros.Enum` macro.
 
-    .. note:: This construct is a singleton. Do not try to instatiate it, as it  will not work.
+    .. note:: This construct is a singleton. Do not try to instatiate it, as
+              it  will not work.
 
     Example::
 
         Pass
     """
     __slots__ = []
+
     def _parse(self, stream, context):
         pass
+
     def _build(self, obj, stream, context):
         assert obj is None
+
     def _sizeof(self, context):
         return 0
 
@@ -1328,12 +1461,14 @@ to indicate Enums.
 
 .. seealso:: :func:`Switch` and the :func:`~construct.macros.Enum` macro.
 
-.. note:: This construct is a singleton. Do not try to instatiate it, as it  will not work.
+.. note:: This construct is a singleton. Do not try to instatiate it, as it
+          will not work.
 
 Example::
 
     Pass
 """
+
 
 class Terminator(Construct):
     """
@@ -1341,19 +1476,24 @@ class Terminator(Construct):
     You can use this to ensure no more unparsed data follows.
 
     .. note::
-        * This construct is only meaningful for parsing. For building, it's a no-op.
-        * This construct is a singleton. Do not try to instatiate it, as it will not work.
+        * This construct is only meaningful for parsing. For building, it's a
+          no-op.
+        * This construct is a singleton. Do not try to instatiate it, as it
+          will not work.
 
     Example::
 
         Terminator
     """
     __slots__ = []
+
     def _parse(self, stream, context):
         if stream.read(1):
             raise TerminatorError("expected end of stream")
+
     def _build(self, obj, stream, context):
         assert obj is None
+
     def _sizeof(self, context):
         return 0
 
@@ -1363,34 +1503,41 @@ Asserts the end of the stream has been reached at the point it's placed.
 You can use this to ensure no more unparsed data follows.
 
 .. note::
-    * This construct is only meaningful for parsing. For building, it's a no-op.
-    * This construct is a singleton. Do not try to instatiate it, as it will not work.
+    * This construct is only meaningful for parsing. For building, it's a
+      no-op.
+    * This construct is a singleton. Do not try to instatiate it, as it will
+      not work.
 
 Example::
 
     Terminator
 """
 
-#=======================================================================================================================
+
+# ======================================================================================================================
 # Extra
-#=======================================================================================================================
+# ======================================================================================================================
 class ULInt24(StaticField):
     """
-    A custom made construct for handling 3-byte types as used in ancient file formats.
-    A better implementation would be writing a more flexable version of FormatField,
-    rather then specifically implementing it for this case
+    A custom made construct for handling 3-byte types as used in ancient file
+    formats. A better implementation would be writing a more flexible version
+    of FormatField, rather then specifically implementing it for this case
     """
     __slots__ = ["packer"]
+
     def __init__(self, name):
         self.packer = Packer("<BH")
         StaticField.__init__(self, name, self.packer.size)
+
     def __getstate__(self):
         attrs = StaticField.__getstate__(self)
         attrs["packer"] = attrs["packer"].format
         return attrs
+
     def __setstate__(self, attrs):
         attrs["packer"] = Packer(attrs["packer"])
         return StaticField.__setstate__(self, attrs)
+
     def _parse(self, stream, context):
         try:
             vals = self.packer.unpack(_read_stream(stream, self.length))
@@ -1398,14 +1545,11 @@ class ULInt24(StaticField):
         except Exception:
             ex = sys.exc_info()[1]
             raise FieldError(ex)
+
     def _build(self, obj, stream, context):
         try:
-            vals = (obj%256, obj >> 8)
+            vals = (obj % 256, obj >> 8)
             _write_stream(stream, self.length, self.packer.pack(vals))
         except Exception:
             ex = sys.exc_info()[1]
             raise FieldError(ex)
-
-
-
-
