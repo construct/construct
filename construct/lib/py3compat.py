@@ -1,8 +1,8 @@
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # py3compat.py
 #
 # Some Python2&3 compatibility code
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 import sys
 PY3 = sys.version_info[0] == 3
 
@@ -41,7 +41,7 @@ if PY3:
         return bytes(b, encoding)
 
     advance_iterator = next
-        
+
 else:
     import cStringIO
     StringIO = BytesIO = cStringIO.StringIO
@@ -67,4 +67,3 @@ else:
 
     def advance_iterator(it):
         return it.next()
-
