@@ -4,6 +4,8 @@ from construct.lib.py3compat import BytesIO, advance_iterator, bchr
 from construct.lib import Container, ListContainer, LazyContainer
 import sys
 import six
+asyncio = __import__('importlib').find_loader('asyncio') and \
+    __import__('asyncio')
 
 try:
     bytes
@@ -317,13 +319,34 @@ class Adapter(Subconstruct):
 # ==============================================================================
 # Fields
 # ==============================================================================
-def _read_stream(stream, length):
-    if length < 0:
-        raise ValueError("length must be >= 0", length)
-    data = stream.read(length)
+def _read_stream_check(data, length):
     if len(data) != length:
         raise FieldError("expected %d, found %d" % (length, len(data)))
     return data
+
+
+@asyncio.coroutine
+def _read_stream_async(read, length):
+    data = yield from read(length)
+    return _read_stream_check(data, length)
+
+
+def _read_stream(stream, length):
+    if length < 0:
+        raise ValueError("length must be >= 0", length)
+    read = getattr(stream, "readexactly", None) or stream.read
+    if asyncio and asyncio.iscoroutinefunction(read):
+        return _read_stream_async(read, length)
+    else:
+        data = read(length)
+    return _read_stream_check(data, length)
+
+
+@asyncio.coroutine
+def _write_stream_async_drain(stream):
+    drain = getattr(stream, "drain", None)
+    if drain:
+        yield from drain()
 
 
 def _write_stream(stream, length, data):
@@ -332,6 +355,8 @@ def _write_stream(stream, length, data):
     if len(data) != length:
         raise FieldError("expected %d, found %d" % (length, len(data)))
     stream.write(data)
+    if asyncio:
+        return _write_stream_async_drain(stream)
 
 
 class StaticField(Construct):
@@ -1514,9 +1539,9 @@ Example::
 """
 
 
-# ======================================================================================================================
+# ==============================================================================
 # Extra
-# ======================================================================================================================
+# ==============================================================================
 class ULInt24(StaticField):
     """
     A custom made construct for handling 3-byte types as used in ancient file
