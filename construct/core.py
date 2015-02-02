@@ -686,7 +686,11 @@ class Struct(Construct):
             elif sc.name is None:
                 subobj = None
             else:
-                subobj = getattr(obj, sc.name)
+                if isinstance(sc, Value):
+                    # allow automatic value calculation from passed obj during build
+                    subobj = obj
+                else:
+                    subobj = getattr(obj, sc.name)
                 context[sc.name] = subobj
             sc._build(subobj, stream, context)
     def _sizeof(self, context):
