@@ -556,7 +556,7 @@ class Range(Subconstruct):
                     (self.mincount, self.maxcout, len(obj)), sys.exc_info()[1])
     def _sizeof(self, context):
         if len(context) < self.mincount or len(context) > self.maxcout:
-            raise RangeError("expected %d to %d, found %d" %
+            raise SizeofError("expected %d to %d, found %d" %
                 (self.mincount, self.maxcout, len(context)))
         return sum(self.subcon._sizeof(obj) for obj in context)
         
