@@ -644,7 +644,7 @@ class Struct(Construct):
             UBInt8("third_element"),
         )
     """
-    __slots__ = ["subcons", "nested", "allow_overwrite"]
+    __slots__ = ["subcons", "nested", "allow_overwrite", "container"]
     def __init__(self, name, *subcons, **kw):
         self.nested = kw.pop("nested", True)
         self.allow_overwrite = kw.pop("allow_overwrite", False)
@@ -720,7 +720,7 @@ class Sequence(Struct):
             UBInt8("third_element"),
         )
     """
-    __slots__ = []
+    __slots__ = ["list_container"]
     def __init__(self, name, *subcons, **kw):
         Struct.__init__(name, *subcons, **kw)
         if self.name is not None:
