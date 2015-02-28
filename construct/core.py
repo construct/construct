@@ -722,7 +722,7 @@ class Sequence(Struct):
     """
     __slots__ = ["list_container"]
     def __init__(self, name, *subcons, **kw):
-        Struct.__init__(name, *subcons, **kw)
+        Struct.__init__(self, name, *subcons, **kw)
         if self.name is not None:
             self.list_container = type(self.name, (ListContainer,), {})
         else:
