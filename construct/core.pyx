@@ -1,3 +1,5 @@
+# cython: profile=True
+# cython: linetrace=True
 from struct import Struct as Packer
 
 from construct.lib.py3compat import BytesIO, advance_iterator, bchr
@@ -428,6 +430,7 @@ class MetaArray(Subconstruct):
         self.countfunc = countfunc
         self._clear_flag(self.FLAG_COPY_CONTEXT)
         self._set_flag(self.FLAG_DYNAMIC)
+
     def _parse(self, stream, context):
         obj = ListContainer()
         c = 0
@@ -444,6 +447,7 @@ class MetaArray(Subconstruct):
         except ConstructError:
             raise ArrayError("expected %d, found %d" % (count, c), sys.exc_info()[1])
         return obj
+
     def _build(self, obj, stream, context):
         count = self.countfunc(context)
         if len(obj) != count:

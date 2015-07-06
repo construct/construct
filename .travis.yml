@@ -5,8 +5,8 @@ python:
     - "3.2"
     - "3.3"
 
-install: 
-    - pip install six
+install:
+    - pip install six cython cyordereddict
 
 before_script:
     - "export PYTHONPATH=$PYTHONPATH:`pwd`"
