@@ -318,7 +318,7 @@ chunk = Struct("chunk",
 
 image_header_chunk = Struct("image_header",
     UBInt32("length"),
-    Const(String("type", 4), "IHDR"),
+    Const(String("type", 4, "utf-8"), "IHDR"),
     UBInt32("width"),
     UBInt32("height"),
     UBInt8("bit_depth"),
