@@ -555,7 +555,11 @@ class Range(Subconstruct):
                 raise RangeError("expected %d to %d, found %d" %
                     (self.mincount, self.maxcout, len(obj)), sys.exc_info()[1])
     def _sizeof(self, context):
-        raise SizeofError("can't calculate size")
+        if len(context) < self.mincount or len(context) > self.maxcout:
+            raise SizeofError("expected %d to %d, found %d" %
+                (self.mincount, self.maxcout, len(context)))
+        return sum(self.subcon._sizeof(obj) for obj in context)
+        
 
 class RepeatUntil(Subconstruct):
     r"""
@@ -686,13 +690,24 @@ class Struct(Construct):
             elif sc.name is None:
                 subobj = None
             else:
-                subobj = getattr(obj, sc.name)
+                if isinstance(sc, Value):
+                    # allow automatic value calculation from passed obj during build
+                    subobj = obj
+                else:
+                    subobj = getattr(obj, sc.name)
                 context[sc.name] = subobj
             sc._build(subobj, stream, context)
     def _sizeof(self, context):
         #if self.nested:
         #    context = Container(_ = context)
-        return sum(sc._sizeof(context) for sc in self.subcons)
+        s = 0
+        for sc in self.subcons:
+            if isinstance(sc, Value):
+                # update context to contain Value's value
+                sc._build(None, None, context)
+            s += sc._sizeof(context)
+        return s
+
 
 class Sequence(Struct):
     """
