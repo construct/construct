@@ -97,7 +97,7 @@ class Container(dict):
         for k, v in self.iteritems():
             if not k.startswith("_"):
                 text = [ind, k, " = "]
-                if hasattr(v, "__pretty_str__"):
+                if hasattr(type(v), "__pretty_str__"):
                     text.append(v.__pretty_str__(nesting + 1, indentation))
                 else:
                     text.append(repr(v))
@@ -149,7 +149,7 @@ class ListContainer(list):
         for elem in self:
             lines.append("\n")
             lines.append(ind)
-            if hasattr(elem, "__pretty_str__"):
+            if hasattr(type(elem), "__pretty_str__"):
                 lines.append(elem.__pretty_str__(nesting + 1, indentation))
             else:
                 lines.append(repr(elem))
@@ -185,7 +185,7 @@ class LazyContainer(object):
     def __pretty_str__(self, nesting = 1, indentation = "    "):
         if self._value is NotImplemented:
             text = "<unread>"
-        elif hasattr(self._value, "__pretty_str__"):
+        elif hasattr(type(self._value), "__pretty_str__"):
             text = self._value.__pretty_str__(nesting, indentation)
         else:
             text = str(self._value)
