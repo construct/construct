@@ -7,7 +7,6 @@ Original code contributed by Robin Munn (rmunn at pobox dot com)
 coding conventions)
 """
 from construct import *
-import six
 
 
 #===============================================================================
@@ -318,7 +317,7 @@ chunk = Struct("chunk",
 
 image_header_chunk = Struct("image_header",
     UBInt32("length"),
-    Const(String("type", 4), "IHDR"),
+    Magic(b"IHDR"),
     UBInt32("width"),
     UBInt32("height"),
     UBInt8("bit_depth"),
@@ -349,7 +348,7 @@ image_header_chunk = Struct("image_header",
 # the complete PNG file
 #===============================================================================
 png_file = Struct("png",
-    Magic(six.b("\x89PNG\r\n\x1a\n")),
+    Magic(b"\x89PNG\r\n\x1a\n"),
     image_header_chunk,
     Rename("chunks", GreedyRange(chunk)),
 )
