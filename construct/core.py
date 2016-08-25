@@ -639,7 +639,7 @@ class Struct(Construct):
             UBInt8("third_element"),
         )
     """
-    __slots__ = ["subcons", "nested", "allow_overwrite"]
+    __slots__ = ["subcons", "nested", "allow_overwrite", "container"]
     def __init__(self, name, *subcons, **kw):
         self.nested = kw.pop("nested", True)
         self.allow_overwrite = kw.pop("allow_overwrite", False)
@@ -649,14 +649,18 @@ class Struct(Construct):
         self.subcons = subcons
         self._inherit_flags(*subcons)
         self._clear_flag(self.FLAG_EMBED)
+        if self.name is not None:
+            self.container = type(self.name, (Container,), {})
+        else:
+            self.container = Container
     def _parse(self, stream, context):
         if "<obj>" in context:
             obj = context["<obj>"]
             del context["<obj>"]
         else:
-            obj = Container()
+            obj = self.container()
             if self.nested:
-                context = Container(_ = context)
+                context = self.container(_ = context)
         for sc in self.subcons:
             if sc.conflags & self.FLAG_EMBED:
                 context["<obj>"] = obj
@@ -673,7 +677,7 @@ class Struct(Construct):
         if "<unnested>" in context:
             del context["<unnested>"]
         elif self.nested:
-            context = Container(_ = context)
+            context = self.container(_ = context)
         for sc in self.subcons:
             if sc.conflags & self.FLAG_EMBED:
                 context["<unnested>"] = True
@@ -711,15 +715,21 @@ class Sequence(Struct):
             UBInt8("third_element"),
         )
     """
-    __slots__ = []
+    __slots__ = ["list_container"]
+    def __init__(self, name, *subcons, **kw):
+        Struct.__init__(self, name, *subcons, **kw)
+        if self.name is not None:
+            self.list_container = type(self.name, (ListContainer,), {})
+        else:
+            self.list_container = ListContainer
     def _parse(self, stream, context):
         if "<obj>" in context:
             obj = context["<obj>"]
             del context["<obj>"]
         else:
-            obj = ListContainer()
+            obj = self.list_container()
             if self.nested:
-                context = Container(_ = context)
+                context = self.container(_ = context)
         for sc in self.subcons:
             if sc.conflags & self.FLAG_EMBED:
                 context["<obj>"] = obj
@@ -734,7 +744,7 @@ class Sequence(Struct):
         if "<unnested>" in context:
             del context["<unnested>"]
         elif self.nested:
-            context = Container(_ = context)
+            context = self.container(_ = context)
         objiter = iter(obj)
         for sc in self.subcons:
             if sc.conflags & self.FLAG_EMBED:
