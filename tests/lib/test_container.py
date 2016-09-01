@@ -9,23 +9,55 @@ class TestContainer(unittest.TestCase):
 
     def test_getattr(self):
         c = Container(a=1)
-        self.assertEqual(c["a"], c.a)
+        self.assertEqual(c["a"], 1)
+        self.assertEqual(c.a, 1)
+
+    def test_getattr_missing(self):
+        c = Container(a=1)
+        self.assertRaises(AttributeError, lambda: c.unknownkey)
 
     def test_setattr(self):
         c = Container()
         c.a = 1
+        self.assertEqual(c.a, 1)
         self.assertEqual(c["a"], 1)
+        c["a"] = 2
+        self.assertEqual(c.a, 2)
+        self.assertEqual(c["a"], 2)
 
     def test_delattr(self):
         c = Container(a=1)
         del c.a
         self.assertFalse("a" in c)
+        self.assertRaises(AttributeError, lambda: c.a)
 
     def test_update(self):
         c = Container(a=1)
         d = Container()
         d.update(c)
         self.assertEqual(d.a, 1)
+
+    def test_items(self):
+        c = Container(a=1,b=2,c=3,d=4)
+        self.assertEqual(c.keys(), ["a","b","c","d"])
+        self.assertEqual(c.values(), [1,2,3,4])
+        self.assertEqual(c.items(), [("a",1),("b",2),("c",3),("d",4)])
+
+    def test_iters(self):
+        c = Container(a=1,b=2,c=3,d=4)
+        self.assertEqual(list(c.iterkeys()), ["a","b","c","d"])
+        self.assertEqual(list(c.itervalues()), [1,2,3,4])
+        self.assertEqual(list(c.iteritems()), [("a",1),("b",2),("c",3),("d",4)])
+
+    def test_order_randomized(self):
+        print("WARNING: this test is randomized and may not be reproducible")
+        c = Container()
+        while True:
+            words = [("".join(chr(randint(65, 97)) for _ in range(randint(3,7))), i) for i in range(20)]
+            if words != list(dict(words).keys()):
+                break
+        c.update(words)
+        self.assertEqual([k for k, _ in words], list(c.keys()))
 
     def test_eq_eq(self):
         c = Container(a=1)
@@ -76,36 +108,31 @@ class TestContainer(unittest.TestCase):
         self.assertTrue("a" not in c)
 
     def test_repr(self):
-        c = Container(a=1, b=2)
-        repr(c)
+        c = Container(a=1, b=2, c=3)
+        self.assertEqual(repr(c), "Container({'a': 1, 'b': 2, 'c': 3})")
 
+    def test_repr_nested(self):
+        c = Container(a=1, b=2, c=Container())
+        self.assertEqual(repr(c), "Container({'a': 1, 'b': 2, 'c': Container({})})")
+    
     def test_repr_recursive(self):
         c = Container(a=1, b=2)
         c.c = c
-        repr(c)
+        self.assertEqual(repr(c), "Container({'a': 1, 'b': 2, 'c': Container(<recursion detected>)})")
 
     def test_str(self):
-        c = Container(a=1, b=2)
-        str(c)
+        c = Container(a=1, b=2, c=3)
+        self.assertEqual(str(c), "Container: \n    a = 1\n    b = 2\n    c = 3")
 
     def test_str_nested(self):
         c = Container(a=1, b=2, c=Container())
-        str(c)
+        self.assertEqual(str(c), "Container: \n        a = 1\n        b = 2\n    c = Container: ")
     
     def test_str_recursive(self):
         c = Container(a=1, b=2)
         c.c = c
-        str(c)
+        self.assertEqual(str(c), "Container: \n    a = 1\n    b = 2\n    c = <recursion detected>")
     
-    def test_order(self):
-        c = Container()
-        while True:
-            words = [("".join(chr(randint(65, 97)) for _ in range(randint(3,7))), i) for i in range(20)]
-            if words != list(dict(words).keys()):
-                break
-        c.update(words)
-        self.assertEqual([k for k, _ in words], list(c.keys()))
-
     def test_dict_arg(self):
         c = Container({'a': 1})
         d = Container(a=1)
