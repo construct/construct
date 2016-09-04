@@ -100,6 +100,12 @@ class TestContainer(unittest.TestCase):
         c = Container()
         self.assertFalse(c)
 
+    def test_bool_false_regression(self):
+        # recursion_lock() used to leave private keys
+        c = Container()
+        str(c); repr(c)
+        self.assertFalse(c)
+
     def test_bool_true(self):
         c = Container(a=1)
         self.assertTrue(c)
@@ -119,10 +125,12 @@ class TestContainer(unittest.TestCase):
     def test_repr_empty(self):
         c = Container()
         self.assertEqual(repr(c), "Container()")
+        self.assertEqual(eval(repr(c)), c)
 
     def test_repr_nested(self):
         c = Container(a=1)(b=2)(c=Container())
         self.assertEqual(repr(c), "Container(a=1)(b=2)(c=Container())")
+        self.assertEqual(eval(repr(c)), c)
     
     def test_repr_recursive(self):
         c = Container(a=1)(b=2)

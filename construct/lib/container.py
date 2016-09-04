@@ -12,7 +12,7 @@ def recursion_lock(retval="<recursion detected>", lock_name="__recursion_lock__"
             try:
                 return func(self, *args, **kw)
             finally:
-                setattr(self, lock_name, False)
+                delattr(self, lock_name)
 
         wrapper.__name__ = func.__name__
         return wrapper
