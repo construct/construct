@@ -54,6 +54,11 @@ class Container(dict):
     __delattr__ = __delitem__
     __setattr__ = __setitem__
 
+    def __call__(self, **kw):
+        for k,v in kw.iteritems():
+            self.__setitem__(k, v)
+        return self
+
     def clear(self):
         dict.clear(self)
         del self.__keys_order__[:]
