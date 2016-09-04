@@ -15,6 +15,7 @@ class TestContainer(unittest.TestCase):
     def test_getattr_missing(self):
         c = Container(a=1)
         self.assertRaises(AttributeError, lambda: c.unknownkey)
+        self.assertRaises(KeyError, lambda: c["unknownkey"])
 
     def test_setattr(self):
         c = Container()
@@ -30,12 +31,15 @@ class TestContainer(unittest.TestCase):
         del c.a
         self.assertFalse("a" in c)
         self.assertRaises(AttributeError, lambda: c.a)
+        self.assertRaises(KeyError, lambda: c["a"])
+        self.assertEqual(c, Container())
 
     def test_update(self):
         c = Container(a=1)
         d = Container()
         d.update(c)
         self.assertEqual(d.a, 1)
+        self.assertEqual(c, d)
 
     def test_items(self):
         c = Container(a=1,b=2,c=3,d=4)
@@ -60,8 +64,8 @@ class TestContainer(unittest.TestCase):
         self.assertEqual([k for k, _ in words], list(c.keys()))
 
     def test_eq_eq(self):
-        c = Container(a=1)
-        d = Container(a=1)
+        c = Container(a=1,b=2,c=3,d=4,e=5)
+        d = Container(c=3,a=1,b=2,e=5,d=4)
         self.assertEqual(c, d)
 
     def test_ne_wrong_type(self):
