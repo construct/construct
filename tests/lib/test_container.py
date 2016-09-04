@@ -114,24 +114,32 @@ class TestContainer(unittest.TestCase):
 
     def test_repr(self):
         c = Container(a=1)(b=2)(c=3)
-        self.assertEqual(repr(c), "Container({'a': 1, 'b': 2, 'c': 3})")
+        self.assertEqual(repr(c), "Container(a=1)(b=2)(c=3)")
+
+    def test_repr_empty(self):
+        c = Container()
+        self.assertEqual(repr(c), "Container()")
 
     def test_repr_nested(self):
         c = Container(a=1)(b=2)(c=Container())
-        self.assertEqual(repr(c), "Container({'a': 1, 'b': 2, 'c': Container({})})")
+        self.assertEqual(repr(c), "Container(a=1)(b=2)(c=Container())")
     
     def test_repr_recursive(self):
         c = Container(a=1)(b=2)
         c.c = c
-        self.assertEqual(repr(c), "Container({'a': 1, 'b': 2, 'c': Container(<recursion detected>)})")
+        self.assertEqual(repr(c), "Container(a=1)(b=2)(c=<recursion detected>)")
 
     def test_str(self):
         c = Container(a=1)(b=2)(c=3)
         self.assertEqual(str(c), "Container: \n    a = 1\n    b = 2\n    c = 3")
 
+    def test_str_empty(self):
+        c = Container()
+        self.assertEqual(str(c), "Container: ")
+
     def test_str_nested(self):
         c = Container(a=1)(b=2)(c=Container())
-        self.assertEqual(str(c), "Container: \n        a = 1\n        b = 2\n    c = Container: ")
+        self.assertEqual(str(c), "Container: \n    a = 1\n    b = 2\n    c = Container: ")
     
     def test_str_recursive(self):
         c = Container(a=1)(b=2)

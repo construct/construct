@@ -139,8 +139,15 @@ class Container(dict):
     def items(self):
         return list(self.iteritems())
 
+    @recursion_lock()
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, dict.__repr__(self))
+        parts = ["Container"]
+        for k,v in self.iteritems():
+            if not k.startswith("_"):
+                parts.extend(["(",str(k),"=",repr(v),")"])
+        if len(parts) == 1:
+            parts.append("()")
+        return "".join(parts)
 
     @recursion_lock()
     def __str__(self, indentation="\n    "):
@@ -148,8 +155,7 @@ class Container(dict):
         for k,v in self.iteritems():
             if not k.startswith("_"):
                 text.extend([indentation, k, " = "])
-                lines = str(v).split("\n")
-                text.append(indentation.join(lines))
+                text.append(indentation.join(str(v).split("\n")))
         return "".join(text)
 
 
