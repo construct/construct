@@ -55,7 +55,7 @@ class Container(dict):
     __setattr__ = __setitem__
 
     def __call__(self, **kw):
-        for k,v in kw.iteritems():
+        for k,v in kw.items():
             self.__setitem__(k, v)
         return self
 
