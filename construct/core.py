@@ -183,7 +183,7 @@ class Construct(object):
 
     def parse_stream(self, stream):
         """
-        Parse a stream. 
+        Parse a stream.
 
         Files, pipes, sockets, and other streaming sources of data are handled by this method.
         """
@@ -1392,33 +1392,39 @@ Example::
 """
 
 
-#===============================================================================
+# ==============================================================================
 # Extra
-#===============================================================================
-
+# ==============================================================================
 class ULInt24(StaticField):
     """
-    A custom made construct for handling 3-byte types as used in ancient file formats. 
-    
-    Better implementation would be writing a more flexable version of FormatField, rather then specifically implementing it for this case.
+    A custom made construct for handling 3-byte types
+    as used in ancient file formats.
+
+    Better implementation would be writing a more flexible version of
+    FormatField, rather then specifically implementing it for this case.
     """
     __slots__ = ["packer"]
+
     def __init__(self, name):
         self.packer = Packer("<BH")
         super(ULInt24, self).__init__(name, self.packer.size)
+
     def __getstate__(self):
         attrs = super(ULInt24, self).__getstate__()
         attrs["packer"] = attrs["packer"].format
         return attrs
+
     def __setstate__(self, attrs):
         attrs["packer"] = Packer(attrs["packer"])
         return super(ULInt24, self).__setstate__(attrs)
+
     def _parse(self, stream, context):
         vals = self.packer.unpack(_read_stream(stream, self.length))
         return vals[0] + (vals[1] << 8)
+
     def _build(self, obj, stream, context):
-        vals = (obj%256, obj >> 8)
-        _write_stream(stream, self.length, self.packer.pack(vals))
+        vals = (obj % 256, obj >> 8)
+        _write_stream(stream, self.length, self.packer.pack(*vals))
 
 
 class Padding(Construct):
@@ -1531,7 +1537,7 @@ class Const(Construct):
     Example::
 
         Const(b"IHDR")
-        
+
         Const("signature", b"IHDR")
 
         Const(ULInt64("signature"), 123)
@@ -1584,7 +1590,7 @@ class String(Construct):
         .parse(b"hello joh\xd4\x83n") -> u'hello joh\u0503n'
         .build(u'abc') -> b'abc\x00\x00\x00\x00\x00\x00\x00\x00\x00'
         .sizeof() -> 12
-        
+
         String("string", 10, padchar="X", paddir="right")
         .parse(b"helloXXXXX") -> b"hello"
         .build(u"hello") -> b"helloXXXXX"
