@@ -9,6 +9,12 @@ from construct.lib.py3compat import int2byte
 from construct.lib import Container, ListContainer, LazyContainer
 
 
+if sys.version_info[0] < 3:
+  STRING_TYPES = (basestring, )
+else:
+  STRING_TYPES = (str, )
+
+
 #===============================================================================
 # exceptions
 #===============================================================================
@@ -96,7 +102,7 @@ class Construct(object):
     __slots__ = ["name", "conflags"]
     def __init__(self, name, flags=0):
         if name is not None:
-            if not isinstance(name, (str, bytes)):
+            if not isinstance(name, STRING_TYPES):
                 raise TypeError("name must be a string or None", name)
             if name == "_" or name.startswith("<"):
                 raise ValueError("reserved name", name)
