@@ -614,10 +614,6 @@ class TestCore(unittest.TestCase):
         assert (Union("b"/Int16ub, buildfrom=0)   >> Byte).parse(b"\x01\x02\x03") == [Container(b=0x0102),0x03]
         assert (Union("b"/Int16ub, buildfrom="b") >> Byte).parse(b"\x01\x02\x03") == [Container(b=0x0102),0x03]
 
-    @pytest.mark.xfail(reason="skipfrom=this.jump fails")
-    def test_union2(self):
-        assert (Union("empty"/Pass, skipfrom=this.jump) >> Byte).parse(b"\x01\x02\x03\x04", jump=3) == [Container(empty=None),0x04]
-
     @pytest.mark.xfail(not supportskwordered, reason="ordered kw was introduced in 3.6 and pypy")
     def test_union_kwctor(self):
         st = Union(a=Int8ub, b=Int16ub, c=Int32ub)
