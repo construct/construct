@@ -1,3 +1,4 @@
+from io import BlockingIOError
 from time import sleep
 from sys import maxsize
 
@@ -133,26 +134,37 @@ class RebufferedBytesIO(object):
 
 
 class BoundBytesIO(object):
-    __slots__ = ["substream","offset","available"]
-
+    __slots__ = ["substream","start","size"]
     def __init__(self, substream, available):
         self.substream = substream
-        self.offset = substream.tell()
-        self.available = available
+        self.start = self.tell()
+        self.size = available
+
+    @property
+    def available(self):
+        return self.size - (self.tell() - self.start)
+
+    @property
+    def offset(self):
+        return self.substream.tell()
 
     def read(self, count=maxsize):
-        if self.available == 0:
+        avail = self.available
+        if avail == 0:
             return b""
-        count = min(count, self.available)
-        self.offset += count
-        self.available -= count
+        count = min(count, avail)
         data = self.substream.read(count)
         if len(data) < count:
             raise IOError("could only read %s bytes, requested %s" % (len(data),count))
         return data
 
     def seekable(self):
-        return False
+        return True
+
+    def seek(self, offset):
+        if offset < self.start or offset > self.start + self.size:
+            raise IOError("trying to seek out of bounds [%d-%d)" % (self.start, self.start + self.size))
+        self.substream.seek(offset)
 
     def tell(self):
         return self.offset
