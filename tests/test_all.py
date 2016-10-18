@@ -6,6 +6,7 @@ ontravis = 'TRAVIS' in os.environ
 
 from construct import *
 from construct.lib import *
+from construct.core import UnionError
 
 from io import BytesIO
 import os, random, itertools, collections, hashlib, math
@@ -655,6 +656,7 @@ class TestCore(unittest.TestCase):
         assert Union("a"/Bytes(2), "b"/Int16ub).parse(b"\x01\x02") == Container(a=b"\x01\x02")(b=0x0102)
         assert Union("a"/Bytes(2), "b"/Int16ub).build(dict(a=b"zz"))  == b"zz"
         assert Union("a"/Bytes(2), "b"/Int16ub).build(dict(b=0x0102)) == b"\x01\x02"
+        assert raises(Union("a"/Bytes(2), "b"/Int16ub).build, dict()) == UnionError
         assert Union("a"/Bytes(2), "b"/Int16ub, buildfrom=0).build(dict(a=b"zz",b=5))  == b"zz"
         assert Union("a"/Bytes(2), "b"/Int16ub, buildfrom=1).build(dict(a=b"zz",b=5))  == b"\x00\x05"
         assert Union("a"/Bytes(2), "b"/Int16ub, buildfrom="a").build(dict(a=b"zz",b=5))  == b"zz"
@@ -678,6 +680,10 @@ class TestCore(unittest.TestCase):
         assert (Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub))) >> Byte).parse(b"\x01\x02\x03") == [Container(a=0x0102, b=0x01, c=0x02), 0x01]
         assert (Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=0) >> Byte).parse(b"\x01\x02\x03") == [Container(a=0x0102, b=0x01, c=0x02), 0x03]
         assert (Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom="a") >> Byte).parse(b"\x01\x02\x03") == [Container(a=0x0102, b=0x01, c=0x02), 0x03]
+        assert Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom="a").build(dict(a=0x0102)) == b"\x01\x02"
+        assert Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=0).build(dict(a=0x0102)) == b"\x01\x02"
+        assert Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=1).build(dict(b=0x01, c=0x02)) == b"\x01\x02"
+        assert raises(Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=1).build, dict(b=0x01)) == UnionError
 
     @pytest.mark.xfail(not supportskwordered, reason="ordered kw was introduced in 3.6 and pypy")
     def test_union_kwctor(self):

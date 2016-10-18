@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import struct as packer
+from operator import attrgetter
 from struct import Struct as Packer
 from struct import error as PackerError
 from io import BytesIO, StringIO
@@ -1398,7 +1399,12 @@ class Union(Construct):
                 raise UnionError("none of subcons %s were found in the dictionary %s" % (self.subcons, obj))
         if isinstance(self.buildfrom, int):
             sc = self.subcons[self.buildfrom]
-            return sc.subcon._build(obj[sc.name], stream, context, path)
+            # pass the full object if building an embedded union member
+            data = obj if sc.flagembedded else obj[sc.name]
+            try:
+                return sc.subcon._build(data, stream, context, path)
+            except KeyError as ke:
+                raise UnionError("could not find the subcon named '%s' in the dictionary %s" % (ke, obj))
         if isinstance(self.buildfrom, str):
             index = [i for i,sc in enumerate(self.subcons) if sc.name == self.buildfrom][0]
             sc = self.subcons[index]
