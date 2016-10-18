@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import struct as packer
-from operator import attrgetter
 from struct import Struct as Packer
 from struct import error as PackerError
 from io import BytesIO, StringIO
@@ -1346,17 +1345,17 @@ class Union(Construct):
         self.subcons = [Peek(sc) for sc in subcons]
         self.buildfrom = kw.get("buildfrom")
     def _parse(self, stream, context, path):
-        ret = Container()
+        obj = Container()
         context = Container(_ = context)
         for i,sc in enumerate(self.subcons):
             if sc.flagembedded:
                 subobj = list(sc._parse(stream, context, path).items())
-                ret.update(subobj)
+                obj.update(subobj)
                 context.update(subobj)
             else:
                 subobj = sc._parse(stream, context, path)
                 if sc.name is not None:
-                    ret[sc.name] = subobj
+                    obj[sc.name] = subobj
                     context[sc.name] = subobj
         if callable(self.buildfrom):
             self.buildfrom = self.buildfrom(context)
@@ -1367,7 +1366,7 @@ class Union(Construct):
             index = [i for i,sc in enumerate(self.subcons) if sc.name == self.buildfrom][0]
             jump = self.subcons[index].subcon._sizeof(context, path)
             stream.seek(jump, 1)
-        return ret
+        return obj
     def _build(self, obj, stream, context, path):
         context = Container(_ = context)
         context.update(obj)
@@ -1400,11 +1399,8 @@ class Union(Construct):
         if isinstance(self.buildfrom, int):
             sc = self.subcons[self.buildfrom]
             # pass the full object if building an embedded union member
-            data = obj if sc.flagembedded else obj[sc.name]
-            try:
-                return sc.subcon._build(data, stream, context, path)
-            except KeyError as ke:
-                raise UnionError("could not find the subcon named '%s' in the dictionary %s" % (ke, obj))
+            obj2 = obj if sc.flagembedded else obj[sc.name]
+            return sc.subcon._build(obj2, stream, context, path)
         if isinstance(self.buildfrom, str):
             index = [i for i,sc in enumerate(self.subcons) if sc.name == self.buildfrom][0]
             sc = self.subcons[index]

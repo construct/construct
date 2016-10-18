@@ -6,7 +6,6 @@ ontravis = 'TRAVIS' in os.environ
 
 from construct import *
 from construct.lib import *
-from construct.core import UnionError
 
 from io import BytesIO
 import os, random, itertools, collections, hashlib, math
@@ -683,7 +682,8 @@ class TestCore(unittest.TestCase):
         assert Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom="a").build(dict(a=0x0102)) == b"\x01\x02"
         assert Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=0).build(dict(a=0x0102)) == b"\x01\x02"
         assert Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=1).build(dict(b=0x01, c=0x02)) == b"\x01\x02"
-        assert raises(Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=1).build, dict(b=0x01)) == UnionError
+        assert raises(Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=1).build, dict(b=0x01)) == KeyError
+        assert raises(Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=1).build, dict()) == KeyError
 
     @pytest.mark.xfail(not supportskwordered, reason="ordered kw was introduced in 3.6 and pypy")
     def test_union_kwctor(self):
