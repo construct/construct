@@ -1350,7 +1350,7 @@ class Union(Construct):
         for i,sc in enumerate(self.subcons):
             if sc.flagembedded:
                 subobj = list(sc._parse(stream, context, path).items())
-                obj.update(subobj)
+                ret.update(subobj)
                 context.update(subobj)
             else:
                 subobj = sc._parse(stream, context, path)

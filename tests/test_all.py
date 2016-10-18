@@ -672,8 +672,12 @@ class TestCore(unittest.TestCase):
         assert raises(Union(Pass, buildfrom=this.missing).sizeof) == SizeofError
 
         assert (Union("b"/Int16ub) >> Byte).parse(b"\x01\x02\x03") == [Container(b=0x0102),0x01]
-        assert (Union("b"/Int16ub, buildfrom=0)   >> Byte).parse(b"\x01\x02\x03") == [Container(b=0x0102),0x03]
+        assert (Union("b"/Int16ub, buildfrom=0) >> Byte).parse(b"\x01\x02\x03") == [Container(b=0x0102),0x03]
         assert (Union("b"/Int16ub, buildfrom="b") >> Byte).parse(b"\x01\x02\x03") == [Container(b=0x0102),0x03]
+
+        assert (Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub))) >> Byte).parse(b"\x01\x02\x03") == [Container(a=0x0102, b=0x01, c=0x02), 0x01]
+        assert (Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom=0) >> Byte).parse(b"\x01\x02\x03") == [Container(a=0x0102, b=0x01, c=0x02), 0x03]
+        assert (Union("a"/Int16ub, Embedded(Struct("b"/Int8ub, "c"/Int8ub)), buildfrom="a") >> Byte).parse(b"\x01\x02\x03") == [Container(a=0x0102, b=0x01, c=0x02), 0x03]
 
     @pytest.mark.xfail(not supportskwordered, reason="ordered kw was introduced in 3.6 and pypy")
     def test_union_kwctor(self):
