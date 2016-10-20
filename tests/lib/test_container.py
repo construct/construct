@@ -31,7 +31,7 @@ class TestContainer(unittest.TestCase):
     @pytest.mark.xfail(reason="pickling code is wrong?")
     def test_pickling(self):
         import pickle
-        c = Container(a=1)(b=2)(c=3)(d=4)
+        c = Container(a=1)(b=2)(c=3)(d=Container(e=4))
         d = pickle.loads(pickle.dumps(c))
         assert c == d
 

@@ -60,7 +60,8 @@ class Container(dict):
         return list(self.items())
 
     def __setstate__(self, state):
-        self.__init__(state)
+        object.__setattr__(self, "__keys_order__", [])
+        dict.clear(self)
         self.update(state)
 
     def __getattr__(self, name):
