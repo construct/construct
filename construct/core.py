@@ -369,6 +369,19 @@ class Tunnel(Subconstruct):
 #===============================================================================
 # bytes and bits
 #===============================================================================
+fullbytesprinting = True
+
+
+def setfullbytesprinting(fullprinting):
+    r"""
+    Sets full bytes printing flag. When the flag is set, all of the bytes in GreedyBytes and similar will be printed when printing a `~construct.container.Container`.
+
+    :param fullprinting: boolean, to enable or disable printing of full byte string
+    """
+    global fullbytesprinting
+    fullbytesprinting = fullprinting
+
+
 class Bytes(Construct):
     r"""
     A field consisting of a specified number of bytes. Builds from a b-string, or an integer (although deprecated and BytesInteger should be used).
