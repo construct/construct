@@ -19,19 +19,19 @@ def hexdump(data, linesize):
     0060   30 30 30 30                                       0000             
     """
     if len(data) < 16**4:
-        fmt = "%%04X   %%-%ds   %%s" % (3 * linesize - 1,)
+        fmt = u"%%04X   %%-%ds   %%s" % (3 * linesize - 1,)
     elif len(data) < 16**8:
-        fmt = "%%08X   %%-%ds   %%s" % (3 * linesize - 1,)
+        fmt = u"%%08X   %%-%ds   %%s" % (3 * linesize - 1,)
     else:
         raise ValueError("hexdump cannot process more than 16**8 or 4294967296 bytes")
     prettylines = []
     for i in range(0, len(data), linesize):
         line = data[i:i+linesize]
-        hextext = " ".join(_hexprint[b] for b in iterateints(line))
-        rawtext = "".join(_printable[b] for b in iterateints(line))
+        hextext = u" ".join(_hexprint[b] for b in iterateints(line))
+        rawtext = u"".join(_printable[b] for b in iterateints(line))
         prettylines.append(fmt % (i, str(hextext), str(rawtext)))
     prettylines.append("")
-    return "\n".join(prettylines)
+    return u"\n".join(prettylines)
 
 
 def hexundump(data, linesize):

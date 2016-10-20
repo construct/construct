@@ -1,6 +1,12 @@
 """
 Various containers exposed to the user.
 """
+import string
+
+import operator
+
+import construct.core
+from construct.lib.hex import hexdump
 
 
 def recursion_lock(retval="<recursion detected>", lock_name="__recursion_lock__"):
@@ -191,8 +197,27 @@ class Container(dict):
         for k,v in self.items():
             if not isinstance(k,str) or not k.startswith("_"):
                 text.extend([indentation, str(k), " = "])
-                text.append(indentation.join(str(v).split("\n")))
+                if isinstance(v, bytes):
+                    text.append(indentation.join(self.hexdumpsimple(v).split("\n")))
+                else:
+                    text.append(indentation.join(str(v).split("\n")))
         return "".join(text)
+
+    @staticmethod
+    def hexdumpsimple(value):
+        charlimit = 64 if construct.core.fullbytesprinting else None
+        special_char_map = {9:"\\t",0xa:"\\n",0xd:"\\r",0x27:"\\'"}
+        ret = "b'"
+
+        for byte in construct.iterateints(value[:charlimit]):
+            char = chr(byte)
+            ret += special_char_map.get(byte,
+                                        char if char in string.printable else "\\x%02x" % ord(char))
+        ret += "'"
+        if len(value) > charlimit:
+            ret += " (truncated, total %d bytes)" % len(value)
+        return ret
+
 
 
 class FlagsContainer(Container):
