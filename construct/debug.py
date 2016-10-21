@@ -226,7 +226,7 @@ class Debugger(Subconstruct):
             return self.subcon._parse(stream, context, path)
         except Exception:
             self.retval = NotImplemented
-            self.handle_exc("(you can set the value of 'self.retval', which will be returned)")
+            self.handle_exc(path, msg="(you can set the value of 'self.retval', which will be returned)")
             if self.retval is NotImplemented:
                 raise
             else:
@@ -236,15 +236,15 @@ class Debugger(Subconstruct):
         try:
             self.subcon._build(obj, stream, context, path)
         except Exception:
-            self.handle_exc()
+            self.handle_exc(path)
 
     def _sizeof(self, context, path):
         try:
             self.subcon._sizeof(context, path)
         except Exception:
-            self.handle_exc()
+            self.handle_exc(path)
 
-    def handle_exc(self, msg = None):
+    def handle_exc(self, path, msg=None):
         print("================================================================================")
         print("Debugging exception of %s:" % self.subcon)
         print("path is %s" % path)
