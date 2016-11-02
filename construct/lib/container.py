@@ -58,7 +58,7 @@ class Container(dict):
 
         Container(container2)
     """
-    __slots__ = ["__keys_order__","__recursion_lock__"]
+    __slots__ = ["__keys_order__", "__recursion_lock__"]
 
     def __init__(self, *args, **kw):
         object.__setattr__(self, "__keys_order__", [])
@@ -77,27 +77,44 @@ class Container(dict):
             self[k] = v
 
     def __getstate__(self):
-        return list(self.items())
+        return self.__keys_order__
 
     def __setstate__(self, state):
-        object.__setattr__(self, "__keys_order__", [])
-        dict.clear(self)
-        self.update(state)
+        self.__keys_order__ = state
 
     def __getattr__(self, name):
         try:
-            return self[name]
+            if name in self.__slots__:
+                try:
+                    return object.__getattribute__(self, name)
+                except AttributeError as e:
+                    if name == "__keys_order__":
+                        object.__setattr__(self, "__keys_order__", [])
+                        return []
+                    else:
+                        raise e
+            else:
+                return self[name]
         except KeyError:
             raise AttributeError(name)
 
     def __setitem__(self, key, val):
-        if key not in self:
-            self.__keys_order__.append(key)
-        dict.__setitem__(self, key, val)
+        if key in self.__slots__:
+            object.__setattr__(self, key, val)
+        else:
+            if key not in self:
+                if not hasattr(self, "__keys_order__"):
+                    object.__setattr__(self, "__keys_order__", [key])
+                else:
+                    self.__keys_order__.append(key)
+            dict.__setitem__(self, key, val)
 
     def __delitem__(self, key):
-        dict.__delitem__(self, key)
-        self.__keys_order__.remove(key)
+        if key in self.__slots__:
+            object.__delattr__(self, key)
+        else:
+            dict.__delitem__(self, key)
+            self.__keys_order__.remove(key)
 
     __delattr__ = __delitem__
     __setattr__ = __setitem__

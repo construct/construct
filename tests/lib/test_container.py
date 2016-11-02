@@ -28,12 +28,16 @@ class TestContainer(unittest.TestCase):
         assert c == d
         assert list(c.items()) == list(d.items())
 
-    @pytest.mark.xfail(reason="pickling code is wrong?")
     def test_pickling(self):
         import pickle
-        c = Container(a=1)(b=2)(c=3)(d=Container(e=4))
-        d = pickle.loads(pickle.dumps(c))
-        assert c == d
+
+        empty = Container()
+        empty_unpickled = pickle.loads(pickle.dumps(empty))
+        assert empty_unpickled == empty
+
+        embedded = Container(a=1)(b=Container())(c=3)(d=Container(e=4))
+        embedded_unpickled = pickle.loads(pickle.dumps(embedded))
+        assert embedded_unpickled == embedded
 
     def test_getitem(self):
         c = Container(a=1)
