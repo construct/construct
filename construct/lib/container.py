@@ -110,6 +110,7 @@ class Container(dict):
             dict.__setitem__(self, key, val)
 
     def __delitem__(self, key):
+        '''Removes a slot or an item from a Container in non-constant time.'''
         if key in self.__slots__:
             object.__delattr__(self, key)
         else:
