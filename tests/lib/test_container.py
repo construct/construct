@@ -35,9 +35,9 @@ class TestContainer(unittest.TestCase):
         empty_unpickled = pickle.loads(pickle.dumps(empty))
         assert empty_unpickled == empty
 
-        embedded = Container(a=1)(b=Container())(c=3)(d=Container(e=4))
-        embedded_unpickled = pickle.loads(pickle.dumps(embedded))
-        assert embedded_unpickled == embedded
+        nested = Container(a=1)(b=Container())(c=3)(d=Container(e=4))
+        nested_unpickled = pickle.loads(pickle.dumps(nested))
+        assert nested_unpickled == nested
 
     def test_getitem(self):
         c = Container(a=1)
