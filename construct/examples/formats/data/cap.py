@@ -10,7 +10,7 @@ class MicrosecAdapter(Adapter):
         return datetime.datetime.fromtimestamp(obj[0] + obj[1] / 1000000.0)
     def _encode(self, obj, context):
         epoch = datetime.datetime.utcfromtimestamp(0)
-        return [(obj - epoch).total_seconds(), 0]
+        return [int((obj - epoch).total_seconds()), 0]
 
         # offset = time.mktime(*obj.timetuple())
         # sec = int(offset)
