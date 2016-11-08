@@ -1021,6 +1021,8 @@ class Range(Subconstruct):
         except Exception:
             if len(obj) < min:
                 raise RangeError("expected %d to %d, found %d" % (min, max, len(obj)))
+            else:
+                raise
     def _sizeof(self, context, path):
         try:
             min = self.min(context) if callable(self.min) else self.min
