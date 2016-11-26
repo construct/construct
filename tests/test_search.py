@@ -36,7 +36,7 @@ class TestSearch(unittest.TestCase):
         assert obj1.search("aba") == 0x21
         assert obj1.search("abb") == 0x22
         assert obj1.search('ac') == 0x13
-        
+
     def test_search_functionality(self):
         obj1 = self.s.parse(b"\x11\x21\x22\x02\x02\x13\x51\x52")
         obj2 = self.s.parse(b"\x11\x21\x22\x03\x03\x13\x51\x52")
@@ -45,7 +45,7 @@ class TestSearch(unittest.TestCase):
         assert obj1.search('abcb3a') == None
         assert obj1.search('abcb4a') == None
         assert obj1.search('abcb2a') == 0x02
-        
+
         assert obj2.search('abcb1a') == None
         assert obj2.search('abcb2a') == None
         assert obj2.search('abcb4a') == None
@@ -53,7 +53,14 @@ class TestSearch(unittest.TestCase):
 
         # Return only the first one
         assert obj1.search("ada") == 0x51
-        
+
+    def test_search_regexp(self):
+        obj1 = self.s.parse(b"\x11\x21\x22\x02\x02\x13\x51\x52")
+        obj2 = self.s.parse(b"\x11\x21\x22\x03\x03\x13\x51\x52")
+
+        assert obj1.search('abcb[1-4]a') == 0x02
+        assert obj2.search('abcb[1-4]a') == 0x03
+
     def test_search_all_sanity(self):
         obj1 = self.s.parse(b"\x11\x21\x22\x02\x02\x13\x51\x52")
 
@@ -63,10 +70,15 @@ class TestSearch(unittest.TestCase):
         assert obj1.search_all("aba") == [0x21]
         assert obj1.search_all("abb") == [0x22]
         assert obj1.search_all('ac') == [0x13]
-        
+
     def test_search_all_functionality(self):
         obj1 = self.s.parse(b"\x11\x21\x22\x02\x02\x13\x51\x52")
 
         # Return all of them
         assert obj1.search_all("ada") == [0x51,0x52]
+
+    def test_search_all_regexp(self):
+        obj1 = self.s.parse(b"\x11\x21\x22\x02\x02\x13\x51\x52")
+
+        assert obj1.search_all("ab.*") == [0x21, 0x22, 0x02, 0x02]
 

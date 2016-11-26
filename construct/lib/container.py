@@ -50,7 +50,7 @@ class Container(dict):
     Example::
 
         Container([ ("name","anonymous"), ("age",21) ])
-        
+
         Container(name="anonymous")(age=21)
 
         # Note that this syntax does NOT work before python 3.6 due to unordered keyword arguments:
@@ -184,22 +184,22 @@ class Container(dict):
                 return False
         return True
 
-    def _search(self, name, search_all):
+    def _search(self, compiled_pattern, search_all):
         items = []
         for key in self.keys():
             try:
-                if key == name:
-                    if search_all:
-                        items.append(self[key])
-                    else:
-                        return self[key]
                 if type(self[key]) == Container or type(self[key]) == ListContainer:
-                    ret = self[key]._search(name, search_all)
+                    ret = self[key]._search(compiled_pattern, search_all)
                     if ret is not None:
                         if search_all:
                             items.extend(ret)
                         else:
                             return ret
+                elif compiled_pattern.match(key):
+                    if search_all:
+                        items.append(self[key])
+                    else:
+                        return self[key]
             except:
                 pass
         if search_all:
@@ -207,11 +207,15 @@ class Container(dict):
         else:
             return None
 
-    def search(self, name):
-        return self._search(name, False)
+    def search(self, pattern):
+        import re
+        compiled_pattern = re.compile(pattern)
+        return self._search(compiled_pattern, False)
 
-    def search_all(self, name):
-        return self._search(name, True)
+    def search_all(self, pattern):
+        import re
+        compiled_pattern = re.compile(pattern)
+        return self._search(compiled_pattern, True)
 
     @recursion_lock()
     def __repr__(self):
@@ -271,11 +275,11 @@ class ListContainer(list):
             text.append(indentation.join(lines))
         return "".join(text)
 
-    def _search(self, name, search_all):
+    def _search(self, compiled_pattern, search_all):
         items = []
         for item in self:
             try:
-                ret = item._search(name, search_all)
+                ret = item._search(compiled_pattern, search_all)
             except:
                 continue
             if ret is not None:
@@ -288,11 +292,15 @@ class ListContainer(list):
         else:
             return None
 
-    def search(self, name):
-        return self._search(name, False)
+    def search(self, pattern):
+        import re
+        compiled_pattern = re.compile(pattern)
+        return self._search(compiled_pattern, False)
 
-    def search_all(self, name):
-        return self._search(name, True)
+    def search_all(self, pattern):
+        import re
+        compiled_pattern = re.compile(pattern)
+        return self._search(compiled_pattern, True)
 
 
 class LazyContainer(object):
