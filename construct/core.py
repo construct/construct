@@ -1113,16 +1113,16 @@ class PrefixedArray(Construct):
 
 class RepeatUntil(Subconstruct):
     r"""
-    An array that repeats until the predicate indicates it to stop. Note that the last element (which caused the repeat to exit) is included in the return value.
+    An array that repeats until the predicate indicates it to stop. Note that the last element (in which the `predicate` is `True`) is included in the return value.
 
     :param predicate: a predicate function that takes (obj, context) and returns True to break, or False to continue
     :param subcon: the subcon used to parse and build each element
 
     Example::
 
-        >>> RepeatUntil(lambda x,ctx: x>7, Byte).build(range(20))
+        >>> RepeatUntil(lambda x,ctx: x[-1]>7, Byte).build(range(20))
         b'\x00\x01\x02\x03\x04\x05\x06\x07\x08'
-        >>> RepeatUntil(lambda x,ctx: x>7, Byte).parse(b"\x01\xff\x02")
+        >>> RepeatUntil(lambda x,ctx: x[-1]>7, Byte).parse(b"\x01\xff\x02")
         [1, 255]
     """
     __slots__ = ["predicate"]
@@ -1135,7 +1135,7 @@ class RepeatUntil(Subconstruct):
             while True:
                 subobj = self.subcon._parse(stream, context, path)
                 obj.append(subobj)
-                if self.predicate(subobj, context):
+                if self.predicate(obj, context):
                     return obj
         except ExplicitError:
             raise
