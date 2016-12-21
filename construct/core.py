@@ -1744,6 +1744,7 @@ class Seek(Construct):
         super(Seek, self).__init__()
         self.at = at
         self.whence = whence
+        self.flagbuildnone = True
     def _parse(self, stream, context, path):
         at = self.at(context) if callable(self.at) else self.at
         whence = self.whence(context) if callable(self.whence) else self.whence
