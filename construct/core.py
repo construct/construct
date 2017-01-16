@@ -852,7 +852,10 @@ class Struct(Construct):
         context = Container(_ = context)
         for i,sc in enumerate(self.subcons):
             if sc.flagembedded:
-                subobj = list(sc._parse(stream, context, path).items())
+                try:
+                    subobj = list(sc._parse(stream, context, path).items())
+                except AttributeError:
+                    subobj = []
                 obj.update(subobj)
                 context.update(subobj)
             else:
@@ -1363,7 +1366,10 @@ class Union(Construct):
         context = Container(_ = context)
         for i,sc in enumerate(self.subcons):
             if sc.flagembedded:
-                subobj = list(sc._parse(stream, context, path).items())
+                try:
+                    subobj = list(sc._parse(stream, context, path).items())
+                except AttributeError:
+                    subobj = []
                 obj.update(subobj)
                 context.update(subobj)
             else:
@@ -1957,7 +1963,7 @@ class Pass(Construct):
         super(self.__class__, self).__init__()
         self.flagbuildnone = True
     def _parse(self, stream, context, path):
-        return Container()
+        return None
     def _build(self, obj, stream, context, path):
         pass
     def _sizeof(self, context, path):
@@ -2381,7 +2387,10 @@ class LazyStruct(Construct):
         position = stream.tell()
         for i,(sc,size) in enumerate(zip(self.subcons, self.subsizes)):
             if sc.flagembedded:
-                subobj = list(sc._parse(stream, context, path).items())
+                try:
+                    subobj = list(sc._parse(stream, context, path).items())
+                except AttributeError:
+                    subobj = []
                 keys.update(subobj)
                 values.update(subobj)
                 context.update(subobj)
