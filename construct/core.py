@@ -1957,7 +1957,7 @@ class Pass(Construct):
         super(self.__class__, self).__init__()
         self.flagbuildnone = True
     def _parse(self, stream, context, path):
-        return None
+        return Container()
     def _build(self, obj, stream, context, path):
         pass
     def _sizeof(self, context, path):
