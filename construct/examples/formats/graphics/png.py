@@ -133,7 +133,7 @@ bkgd_info = "bkgd_info" / Switch(this._.image_header.color_type,
         "greywithalpha": Int16ub[1],
         "truecolor": Int16ub[3],
         "truewithalpha": Int16ub[3],
-        "indexed": Byte,
+        "indexed": Int8ub,
     }
 )
 
