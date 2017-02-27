@@ -268,6 +268,33 @@ class TestCore(unittest.TestCase):
         assert raises(Range(1, 1, VarInt).sizeof) == SizeofError
         assert raises(Range(1, 9, Byte).sizeof) == SizeofError
 
+    def test_predicaterange(self):
+        false = lambda obj, ctx: False
+
+        # PredicateRange should behave exactly like Range when the predicate is False.
+        assert PredicateRange(3, 5, false, Byte).parse(b"\x01\x02\x03") == [1,2,3]
+        assert PredicateRange(3, 5, false, Byte).parse(b"\x01\x02\x03\x04") == [1,2,3,4]
+        assert PredicateRange(3, 5, false, Byte).parse(b"\x01\x02\x03\x04\x05") == [1,2,3,4,5]
+        assert PredicateRange(3, 5, false, Byte).parse(b"\x01\x02\x03\x04\x05\x06") == [1,2,3,4,5]
+        assert raises(PredicateRange(3, 5, false, Byte).parse, b"") == RangeError
+        assert PredicateRange(3, 5, false, Byte).build([1,2,3]) == b"\x01\x02\x03"
+        assert PredicateRange(3, 5, false, Byte).build([1,2,3,4]) == b"\x01\x02\x03\x04"
+        assert PredicateRange(3, 5, false, Byte).build([1,2,3,4,5]) == b"\x01\x02\x03\x04\x05"
+        assert raises(PredicateRange(3, 5, false, Byte).build, [1,2]) == RangeError
+        assert raises(PredicateRange(3, 5, false, Byte).build, [1,2,3,4,5,6]) == RangeError
+        assert raises(PredicateRange(3, 5, false, Byte).build, 0) == RangeError
+        assert raises(PredicateRange(3, 5, false, Byte).sizeof) == SizeofError
+        assert PredicateRange(0, 100, false, Struct("id"/Byte)).parse(b'\x01\x02') == [Container(id=1),Container(id=2)]
+        assert PredicateRange(0, 100, false, Struct("id"/Byte)).build([dict(id=i) for i in range(5)]) == b'\x00\x01\x02\x03\x04'
+        assert raises(PredicateRange(0, 100, false, Struct("id"/Byte)).build, dict(id=1)) == RangeError
+        assert raises(PredicateRange(0, 100, false, Struct("id"/Byte)).sizeof) == SizeofError
+        assert PredicateRange(1, 1, false, Byte).sizeof() == 1
+        assert raises(PredicateRange(1, 1, false, VarInt).sizeof) == SizeofError
+        assert raises(PredicateRange(1, 9, false, Byte).sizeof) == SizeofError
+        # TODO: define what should happen when a longer byte sequence arrives where the predicate is True 
+        assert PredicateRange(1, 6, lambda obj, ctx: obj == 5, Byte).parse(b'\x01\x02\x03\x04\x05\x06') == [1,2,3,4,5]
+        assert raises(PredicateRange(3, 6, lambda obj, ctx: obj == 1, Byte).parse, b'\x01\x02\x03\x04\x05\x06') == RangeError
+
     def test_greedyrange(self):
         common(GreedyRange(Byte), b"", [], SizeofError)
         common(GreedyRange(Byte), b"\x01\x02", [1,2], SizeofError)

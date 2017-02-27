@@ -1037,6 +1037,104 @@ class Range(Subconstruct):
             raise SizeofError("cannot calculate size")
 
 
+class PredicateRange(Subconstruct):
+    r"""
+    A homogenous array of elements. The array will iterate through between ``min`` to ``max`` times halting when `predicate` is `True`. If an exception occurs (EOF, validation error), the repeater exits cleanly. If less than ``min`` units have been successfully parsed, a RangeError is raised. Building stops when an 
+
+    .. seealso:: Analog :func:`~construct.core.GreedyRange` that parses until end of stream.
+
+    .. note:: This object requires a seekable stream for parsing.
+
+    :param min: the minimal count
+    :param max: the maximal count
+    :param predicate: a predicate function that takes (obj, context) and returns True to break, or False to continue
+    :param subcon: the subcon to process individual elements
+
+    Example::
+
+        >>> PredicateRange(3, 5, lambda obj, ctx: obj==3, Byte).build([1,2,3,4])
+        b'\x01\x02\x03'
+        >>> PredicateRange(3, 5, lambda obj, ctx: obj==3, Byte).parse(_)
+        [1, 2, 3]
+
+        >>> PredicateRange(3, 5, lambda ctx, obj: False, Byte).build([1,2])
+        construct.core.RangeError: expected from 3 to 5 elements, found 2
+        >>> PredicateRange(3, 5, lambda ctx, obj: False, Byte).build([1,2,3,4,5,6])
+        construct.core.RangeError: expected from 3 to 5 elements, found 6
+        >>> PredicateRange(3, 5, lambda ctx, obj: obj==4, Byte).build([1,2,3,4,5,6])
+        b'\x01\x02\x03\x04'
+    """
+    __slots__ = ["min", "max", "predicate"]
+    def __init__(self, min, max, predicate, subcon):
+        super(PredicateRange, self).__init__(subcon)
+        self.min = min
+        self.max = max
+        self.predicate = predicate
+    def _parse(self, stream, context, path):
+        min = self.min(context) if callable(self.min) else self.min
+        max = self.max(context) if callable(self.max) else self.max
+        if not 0 <= min <= max <= sys.maxsize:
+            raise RangeError("unsane min %s and max %s" % (min, max))
+        obj = ListContainer()
+        context = Container(_ = context)
+        try:
+            while len(obj) < max:
+                fallback = stream.tell()
+                subobj = self.subcon._parse(stream, context._, path)
+                obj.append(subobj)
+                context[len(obj)-1] = obj[-1]
+                if self.predicate(subobj, context):
+                    # When the predicate is True, we still need to check
+                    # whether at least `min` units were read.
+                    fallback = stream.tell()
+                    raise
+        except ExplicitError:
+            raise
+        except Exception:
+            if len(obj) < min:
+                raise RangeError("expected %d to %d, found %d" % (min, max, len(obj)))
+            stream.seek(fallback)
+        return obj
+    def _build(self, obj, stream, context, path):
+        min = self.min(context) if callable(self.min) else self.min
+        max = self.max(context) if callable(self.max) else self.max
+        if not 0 <= min <= max <= sys.maxsize:
+            raise RangeError("unsane min %s and max %s" % (min, max))
+        if not isinstance(obj, collections.Sequence):
+            print(obj)
+            raise RangeError("expected sequence type, found %s" % type(obj))
+        #TODO: Decide whether building should succeed if too many elements are
+        #given but one satisfies the predicate making the effective list shorter...
+        if not min <= len(obj):
+            raise RangeError("expected from %d to %d elements, found %d" % (min, max, len(obj)))
+        context = Container(_ = context)
+        try:
+            for i,subobj in enumerate(obj):
+                print(i)
+                context[i] = subobj
+                self.subcon._build(subobj, stream, context._, path)
+                if self.predicate(subobj, context) or i >= max:
+                    # When the predicate is True, we still need to check
+                    # whether at least `min` units were built.
+                    raise
+        except ExplicitError:
+            raise
+        except Exception:
+            if i < min - 1:
+                raise RangeError("expected %d to %d, found %d before the terminal condition" % (min, max, i))
+            if i >= max:
+                raise RangeError("expected from %d to %d elements, found %d" % (min, max, len(obj)))
+    def _sizeof(self, context, path):
+        try:
+            min = self.min(context) if callable(self.min) else self.min
+            max = self.max(context) if callable(self.max) else self.max
+        except (KeyError, AttributeError):
+            raise SizeofError("cannot calculate size, key not found in context")
+        if min == max:
+            return min * self.subcon._sizeof(context, path)
+        else:
+            raise SizeofError("cannot calculate size")
+
 def GreedyRange(subcon):
     r"""
     A homogenous array of elements that parses until end of stream and builds from all elements.
