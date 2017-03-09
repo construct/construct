@@ -780,6 +780,7 @@ class TestCore(unittest.TestCase):
         assert String(5, trimdir="left").build(b"1234567890") == b"67890"
         assert String(5, padchar=b"X", paddir="left", encoding="utf8").sizeof() == 5
         assert String(5).sizeof() == 5
+        assert String(3, encoding="utf8").parse(b"a\x00\xFF") == u"a"
 
     def test_pascalstring(self):
         assert PascalString(Byte).parse(b"\x05hello????????") == b"hello"
