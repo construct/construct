@@ -9,6 +9,7 @@ import sys
 import collections
 
 from construct.lib import *
+from construct.expr import ExprMixin
 
 
 #===============================================================================
@@ -1135,7 +1136,9 @@ class RepeatUntil(Subconstruct):
             while True:
                 subobj = self.subcon._parse(stream, context, path)
                 obj.append(subobj)
-                if self.predicate(obj, context):
+                # TODO: Get rid of this when rethinking obj_, this
+                args = (subobj, context) if self.predicate is ExprMixin else (subobj, context, obj)
+                if self.predicate(*args):
                     return obj
         except ExplicitError:
             raise
@@ -1144,7 +1147,9 @@ class RepeatUntil(Subconstruct):
     def _build(self, obj, stream, context, path):
         for subobj in obj:
             self.subcon._build(subobj, stream, context, path)
-            if self.predicate(subobj, context):
+            # TODO: Get rid of this when rethinking obj_, this
+            args = (subobj, context) if self.predicate is ExprMixin else (subobj, context, obj)
+            if self.predicate(*args):
                 break
         else:
             raise RangeError("missing terminator when building")
