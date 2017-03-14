@@ -268,10 +268,7 @@ GreedyRange is essentially a Range from 0 to infinity.
 
 RepeatUntil is different than the others. Each element is tested by a lambda predicate. The predicate signals when a given element is the terminal element. The repeater inserts all previous items along with the terminal one, and returns just the same.
 
->>> RepeatUntil(lambda obj,ctx: obj > 10, Byte).parse(b"\x01\x05\x08\xff\x01\x02\x03")
+>>> RepeatUntil(lambda obj,ctx,lst: obj > 10, Byte).parse(b"\x01\x05\x08\xff\x01\x02\x03")
 [1, 5, 8, 255]
->>> RepeatUntil(lambda obj,ctx: obj > 10, Byte).build(range(20))
+>>> RepeatUntil(lambda obj,ctx,lst: obj > 10, Byte).build(range(20))
 b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b'
-
-
-
