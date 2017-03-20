@@ -1121,9 +1121,9 @@ class RepeatUntil(Subconstruct):
 
     Example::
 
-        >>> RepeatUntil(lambda x,lst,ctx: x[-1]>7, Byte).build(range(20))
+        >>> RepeatUntil(lambda x,lst,ctx: x>7, Byte).build(range(20))
         b'\x00\x01\x02\x03\x04\x05\x06\x07\x08'
-        >>> RepeatUntil(lambda x,lst,ctx: x[-1]>7, Byte).parse(b"\x01\xff\x02")
+        >>> RepeatUntil(lambda x,lst,ctx: x>7, Byte).parse(b"\x01\xff\x02")
         [1, 255]
         >>> RepeatUntil(lambda x,lst,ctx: len(lst)==2, Byte).parse(b"\x01\xff\x02")
         [1, 255]
