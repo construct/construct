@@ -125,7 +125,7 @@ image_descriptor = Struct("image_descriptor",
         )
     ),
     ULInt8("LZW_minimum_code_size"),
-    RepeatUntil(lambda obj, ctx, lst: obj.size == 0, data_sub_block)
+    RepeatUntil(lambda obj, lst, ctx: obj.size == 0, data_sub_block)
 )
 
 gif_data = Struct("gif_data",
