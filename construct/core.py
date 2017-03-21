@@ -1127,6 +1127,12 @@ class RepeatUntil(Subconstruct):
         [1, 255]
         >>> RepeatUntil(lambda x,lst,ctx: len(lst)==2, Byte).parse(b"\x01\xff\x02")
         [1, 255]
+        >>> # Parse bytes until five even ones have appeared
+        >>> RepeatUntil(lambda x,lst,ctx: sum(map(lambda e: e % 2 == 0, lst)) > 5, Byte).parse(b"\x01\x02\x03\x04\x05\x06\x07\x08\x09")
+        [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        >>> # Parse Bytes until the sequence is a palindrome
+        >>> RepeatUntil(lambda x,lst,ctx: lst[::-1] == lst, Byte).parse(b"\x01\x02\x03\x04\x03\x02\x01\x00")
+        [1, 2, 3, 4, 3, 2, 1]
     """
     __slots__ = ["predicate"]
     def __init__(self, predicate, subcon):
