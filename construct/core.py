@@ -1153,10 +1153,10 @@ class RepeatUntil(Subconstruct):
         except ConstructError:
             raise RangeError("missing terminator when parsing")
     def _build(self, obj, stream, context, path):
-        for subobj in obj:
+        for i, subobj in enumerate(obj):
             self.subcon._build(subobj, stream, context, path)
             # TODO: Get rid of this when rethinking obj_, this
-            args = (subobj, context) if self.predicate is ExprMixin else (subobj, obj, context)
+            args = (subobj, context) if self.predicate is ExprMixin else (subobj, obj[:i+1], context)
             if self.predicate(*args):
                 break
         else:
