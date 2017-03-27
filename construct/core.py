@@ -9,6 +9,7 @@ import sys
 import collections
 
 from construct.lib import *
+from construct.expr import ExprMixin
 
 
 #===============================================================================
@@ -1113,17 +1114,29 @@ class PrefixedArray(Construct):
 
 class RepeatUntil(Subconstruct):
     r"""
-    An array that repeats until the predicate indicates it to stop. Note that the last element (which caused the repeat to exit) is included in the return value.
+    An array that repeats until the predicate indicates it to stop. Note that the last element (in which the `predicate` is `True`) is included in the return value.
 
-    :param predicate: a predicate function that takes (obj, context) and returns True to break, or False to continue
+    :param predicate: a predicate function that takes (obj, current_list, context) and returns True to break, or False to continue
     :param subcon: the subcon used to parse and build each element
 
     Example::
 
-        >>> RepeatUntil(lambda x,ctx: x>7, Byte).build(range(20))
+        >>> RepeatUntil(lambda x,lst,ctx: x>7, Byte).build(range(20))
         b'\x00\x01\x02\x03\x04\x05\x06\x07\x08'
-        >>> RepeatUntil(lambda x,ctx: x>7, Byte).parse(b"\x01\xff\x02")
+        >>> RepeatUntil(lambda x,lst,ctx: x>7, Byte).parse(b"\x01\xff\x02")
         [1, 255]
+        >>> RepeatUntil(lambda x,lst,ctx: len(lst)==2, Byte).parse(b"\x01\xff\x02")
+        [1, 255]
+        >>> # Parse bytes until five even ones have appeared
+        >>> RepeatUntil(lambda x,lst,ctx: sum(map(lambda e: e % 2 == 0, lst)) > 5, Byte).parse(b"\x01\x02\x03\x04\x05\x06\x07\x08\x09")
+        [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        >>> # Parse until the sequence is a palindrome of at least three Bytes.
+        >>> 3pal = cs.RepeatUntil(lambda x,xs,ctx: (xs[::-1] == xs) and (len(xs) > 3), cs.Byte)
+        >>> 3pal.parse(b'\x01\x02\x03\x04\x03\x02\x01\x00')
+        [1, 2, 3, 4, 3, 2, 1]
+        >>> 3pal.build(_)
+        '\x01\x02\x03\x04\x03\x02\x01'
+
     """
     __slots__ = ["predicate"]
     def __init__(self, predicate, subcon):
@@ -1135,16 +1148,20 @@ class RepeatUntil(Subconstruct):
             while True:
                 subobj = self.subcon._parse(stream, context, path)
                 obj.append(subobj)
-                if self.predicate(subobj, context):
+                # TODO: Get rid of this when rethinking obj_, this
+                args = (subobj, context) if self.predicate is ExprMixin else (subobj, obj, context)
+                if self.predicate(*args):
                     return obj
         except ExplicitError:
             raise
         except ConstructError:
             raise RangeError("missing terminator when parsing")
     def _build(self, obj, stream, context, path):
-        for subobj in obj:
+        for i, subobj in enumerate(obj):
             self.subcon._build(subobj, stream, context, path)
-            if self.predicate(subobj, context):
+            # TODO: Get rid of this when rethinking obj_, this
+            args = (subobj, context) if self.predicate is ExprMixin else (subobj, obj[:i+1], context)
+            if self.predicate(*args):
                 break
         else:
             raise RangeError("missing terminator when building")
@@ -1816,7 +1833,7 @@ class Rebuffered(Subconstruct):
 
     Example::
 
-        Rebuffered(RepeatUntil(lambda obj,ctx: ?,Byte), tailcutoff=1024).parse_stream(endless_nonblocking_stream)
+        Rebuffered(RepeatUntil(lambda obj,lst,ctx: ?,Byte), tailcutoff=1024).parse_stream(endless_nonblocking_stream)
     """
     __slots__ = ["stream2", "tailcutoff"]
     def __init__(self, subcon, tailcutoff=None):
@@ -3376,7 +3393,7 @@ def CString(terminators=b"\x00", encoding=None):
     """
     return StringEncoded(
         ExprAdapter(
-            RepeatUntil(lambda obj,ctx: int2byte(obj) in terminators, Byte),
+            RepeatUntil(lambda obj,lst,ctx: int2byte(obj) in terminators, Byte),
             encoder = lambda obj,ctx: iterateints(obj+terminators),
             decoder = lambda obj,ctx: b''.join(int2byte(c) for c in obj[:-1])),
         encoding)
