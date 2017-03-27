@@ -1144,9 +1144,9 @@ class RepeatUntil(Subconstruct):
         except ConstructError:
             raise RangeError("missing terminator when parsing")
     def _build(self, obj, stream, context, path):
-        for subobj in obj:
+        for i, subobj in enumerate(obj):
             self.subcon._build(subobj, stream, context, path)
-            if self.predicate(subobj, obj, context):
+            if self.predicate(subobj, obj[:i+1], context):
                 break
         else:
             raise RangeError("missing terminator when building")
