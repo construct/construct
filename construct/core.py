@@ -2236,7 +2236,7 @@ class Prefixed(Subconstruct):
             return obj
         except SizeofError:
             # WARNING missing data?
-            self.subcon.build(obj, context)
+            data = self.subcon.build(obj, context)
             self.lengthfield._build(len(data), stream, context, path)
             _write_stream(stream, len(data), data)
     def _sizeof(self, context, path):
