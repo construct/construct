@@ -1160,7 +1160,7 @@ class TestCore(unittest.TestCase):
             Probe(),
             "checksum" / Checksum(
                 Byte,
-                lambda data: sum(data) & 0xFF,
+                lambda data: sum(iterateints(data)) & 0xFF,
                 this.vals.data
             ),
         )
