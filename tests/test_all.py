@@ -1150,6 +1150,25 @@ class TestCore(unittest.TestCase):
         assert HeaderData.build(dict(type=1, size=5, data=b"12345")) == b"\x01\x00\x0512345"
         assert HeaderData.build(dict(type=2, size=5, data=b"12345")) == b"\x02\x00\x00\x00\x0512345"
 
+    def test_from_issue_324(self):
+        d = Struct(
+            Prefixed(
+                "length" / Byte,
+                "vals" / RawCopy(
+                    Struct(
+                        "a" / Byte[2]
+                    )),
+            ),
+            "checksum" / Checksum(
+                Byte,
+                lambda data: sum(data) & 0xFF,
+                this.vals.data
+            )
+        )
+        indata = dict(vals=dict(value=dict(a=b"\x00\x01")))
+        expected = b"\x02\x00\x01\x01"
+        assert d.build(indata) == expected 
+
     def test_struct_proper_context(self):
         d1 = Struct(
             "x"/Byte,
