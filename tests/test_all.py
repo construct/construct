@@ -1152,22 +1152,18 @@ class TestCore(unittest.TestCase):
 
     def test_from_issue_324(self):
         d = Struct(
-            Prefixed(
-                "length" / Byte,
-                "vals" / RawCopy(
-                    Struct(
-                        "a" / Byte[2]
-                    )),
-            ),
+            "vals" / Prefixed(Byte, RawCopy(
+                Struct(
+                    "a" / Byte[2]
+                ),
+            )),
             "checksum" / Checksum(
                 Byte,
                 lambda data: sum(data) & 0xFF,
                 this.vals.data
-            )
+            ),
         )
-        indata = dict(vals=dict(value=dict(a=b"\x00\x01")))
-        expected = b"\x02\x00\x01\x01"
-        assert d.build(indata) == expected 
+        assert d.build(dict(vals=dict(value=dict(a=b"\x00\x01")))) == b"\x02\x00\x01\x01" 
 
     def test_struct_proper_context(self):
         d1 = Struct(
