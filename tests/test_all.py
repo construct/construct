@@ -1163,7 +1163,8 @@ class TestCore(unittest.TestCase):
                 this.vals.data
             ),
         )
-        assert d.build(dict(vals=dict(value=dict(a=b"\x00\x01")))) == b"\x02\x00\x01\x01" 
+        assert d.build(dict(vals=dict(value=dict(a=[0,1])))) == b"\x02\x00\x01\x01" 
+        assert d.build(dict(vals=dict(data=b"\x00\x01"))) == b"\x02\x00\x01\x01" 
 
     def test_struct_proper_context(self):
         d1 = Struct(
