@@ -2280,6 +2280,7 @@ class Checksum(Construct):
     def _build(self, obj, stream, context, path):
         hash2 = self.hashfunc(self.bytesfunc(context))
         self.checksumfield._build(hash2, stream, context, path)
+        return hash2
     def _sizeof(self, context, path):
         return self.checksumfield._sizeof(context, path)
 
