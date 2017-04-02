@@ -1157,6 +1157,7 @@ class TestCore(unittest.TestCase):
                     "a" / Byte[2]
                 ),
             )),
+            Probe(),
             "checksum" / Checksum(
                 Byte,
                 lambda data: sum(data) & 0xFF,
