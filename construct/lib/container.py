@@ -171,6 +171,10 @@ class Container(dict):
 
     __iter__ = keys
 
+    def __dir__(self):
+        """For auto completion of attributes based on container values."""
+        return list(self.keys()) + list(self.__class__.__dict__) + dir(super(Container, self))
+
     def __eq__(self, other):
         if not isinstance(other, dict):
             return False
