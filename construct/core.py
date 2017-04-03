@@ -2235,7 +2235,7 @@ class Prefixed(Subconstruct):
             stream.seek(offset3)
             return obj
         except SizeofError:
-            # WARNING missing data?
+            # WARNING subcon build return is not passed back
             data = self.subcon.build(obj, context)
             self.lengthfield._build(len(data), stream, context, path)
             _write_stream(stream, len(data), data)
