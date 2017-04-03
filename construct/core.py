@@ -2228,12 +2228,14 @@ class Prefixed(Subconstruct):
             offset1 = stream.tell()
             self.lengthfield._build(0, stream, context, path)
             offset2 = stream.tell()
-            self.subcon._build(obj, stream, context, path)
+            obj = self.subcon._build(obj, stream, context, path)
             offset3 = stream.tell()
             stream.seek(offset1)
             self.lengthfield._build(offset3-offset2, stream, context, path)
             stream.seek(offset3)
+            return obj
         except SizeofError:
+            # WARNING subcon build return is not passed back
             data = self.subcon.build(obj, context)
             self.lengthfield._build(len(data), stream, context, path)
             _write_stream(stream, len(data), data)
@@ -2280,6 +2282,7 @@ class Checksum(Construct):
     def _build(self, obj, stream, context, path):
         hash2 = self.hashfunc(self.bytesfunc(context))
         self.checksumfield._build(hash2, stream, context, path)
+        return hash2
     def _sizeof(self, context, path):
         return self.checksumfield._sizeof(context, path)
 
