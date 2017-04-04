@@ -711,6 +711,12 @@ class TestCore(unittest.TestCase):
         assert Prefixed(Byte, Sequence(Peek(Byte), Int16ub, GreedyBytes)).parse(b"\x02\x00\xff????????") == [0,255,b'']
         assert raises(Prefixed(VarInt, GreedyBytes).sizeof) == SizeofError
 
+    def test_prefixed_check(self):
+        test = Struct(Prefixed("length" / Byte, "vals" / Byte),
+                      "pointer" / Pointer(-this.length, Byte))
+        indata = b"\x01\x01\x01"
+        assert indata == test.build(test.parse(indata))
+
     def test_compressed_zlib(self):
         zeros = bytes(10000)
         d = Compressed(GreedyBytes, "zlib")
