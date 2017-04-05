@@ -16,11 +16,11 @@ Essentially almost every code that uses the base classes also works on these but
 
 `LazyStruct` works like Struct but parses into a LazyContainer.
 
-    Equivalent to Struct construct, however fixed size members are parsed on demend, others are parsed immediately. If entire struct is fixed size then entire parse is essentially one seek.
+    Equivalent to Struct construct, however fixed size members are parsed on demand, others are parsed immediately. If entire struct is fixed size then entire parse is essentially one seek.
 
 `LazySequence` works like Sequence but parses into a LazySequenceContainer.
 
-    Equivalent to Sequence construct, however fixed size members are parsed on demend, others are parsed immediately. If entire sequence is fixed size then entire parse is essentially one seek.
+    Equivalent to Sequence construct, however fixed size members are parsed on demand, others are parsed immediately. If entire sequence is fixed size then entire parse is essentially one seek.
 
 `LazyRange` works like Range but parses into a LazyRangeContainer.
 
