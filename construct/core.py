@@ -2318,7 +2318,7 @@ class Compressed(Tunnel):
 #===============================================================================
 class LazyStruct(Construct):
     r"""
-    Equivalent to Struct construct, however fixed size members are parsed on demend, others are parsed immediately. If entire struct is fixed size then entire parse is essentially one seek.
+    Equivalent to Struct construct, however fixed size members are parsed on demand, others are parsed immediately. If entire struct is fixed size then entire parse is essentially one seek.
 
     .. seealso:: Equivalent to :func:`~construct.core.Struct`.
 
