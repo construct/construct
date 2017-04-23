@@ -1089,7 +1089,7 @@ def Array(count, subcon):
 
 def PrefixedArray(lengthfield, subcon):
     r"""
-    An array prefixed by a length field (as opposed to preixed by byte count, see :func:`~construct.core.Array`).
+    An array prefixed by a length field (as opposed to preixed by byte count, see :func:`~construct.core.Prefixed`).
 
     :param lengthfield: a field parsing and building an integer
     :param subcon: the subcon to process individual elements
