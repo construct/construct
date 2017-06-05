@@ -1720,7 +1720,7 @@ class Seek(Construct):
 
     .. seealso:: Analog :func:`~construct.core.Pointer` wrapper that has same side effect but also processed a subcon.
 
-    :param at: where to jump to, can ne an int or a context lambda
+    :param at: where to jump to, can be an int or a context lambda
     :param whence: is the offset from beginning (0) or from current position (1) or from ending (2), can be an int or a context lambda, default is 0
 
     Example::
