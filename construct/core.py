@@ -71,7 +71,7 @@ def _read_stream(stream, length, unitname='bytes'):
         raise ValueError("length must be >= 0", length)
     data = stream.read(length)
     if len(data) != length:
-        raise FieldError("could not read enough %s, expected %d, found %d" % (unitname, length, len(data))) # TODO: Check here
+        raise FieldError("could not read enough %s, expected %d, found %d" % (unitname, length, len(data)))
     return data
 
 def _write_stream(stream, length, data, unitname='bytes'):
@@ -80,10 +80,10 @@ def _write_stream(stream, length, data, unitname='bytes'):
     if length < 0:
         raise ValueError("length must be >= 0", length)
     if len(data) != length:
-        raise FieldError("could not write %s, expected %d, found %d" % (unitname, length, len(data))) # TODO: Check here
+        raise FieldError("could not write %s, expected %d, found %d" % (unitname, length, len(data)))
     written = stream.write(data)
     if written is not None and written != length:
-        raise FieldError("could not write %s, written %d, should %d" % (unitname, written, length)) # TODO: Check here
+        raise FieldError("could not write %s, written %d, should %d" % (unitname, written, length))
 
 
 #===============================================================================
@@ -1763,7 +1763,7 @@ class Restreamed(Subconstruct):
     :param encoderunit: ratio as int, encoder takes that many bytes at once
     :param decoder: a function that takes a b-string and returns a b-string (used when parsing)
     :param decoderunit: ratio as int, decoder takes that many bytes at once
-    :param decoderunitname: English string that describes the units (plural) returned by the decoder. Used in error messages.
+    :param decoderunitname: English string that describes the unit returned by the decoder. Used for error messages.
     :param sizecomputer: a function that computes amount of bytes outputed by some bytes
 
     Example::
