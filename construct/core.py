@@ -64,7 +64,7 @@ def singleton(cls):
 def singletonfunction(func):
     return func()
 
-def _read_stream(stream, length, unitname='bytes'):
+def _read_stream(stream, length, unitname="bytes"):
     # if not isinstance(length, int):
     #     raise TypeError("expected length to be int")
     if length < 0:
@@ -74,7 +74,7 @@ def _read_stream(stream, length, unitname='bytes'):
         raise FieldError("could not read enough %s, expected %d, found %d" % (unitname, length, len(data)))
     return data
 
-def _write_stream(stream, length, data, unitname='bytes'):
+def _write_stream(stream, length, data, unitname="bytes"):
     # if not isinstance(data, bytes):
     #     raise TypeError("expected data to be a bytes")
     if length < 0:
@@ -573,7 +573,7 @@ class BitsInteger(Construct):
         self.bytesize = bytesize
     def _parse(self, stream, context, path):
         length = self.length(context) if callable(self.length) else self.length
-        data = _read_stream(stream, length, 'bits')
+        data = _read_stream(stream, length, "bits")
         if self.swapped:
             data = swapbytes(data, self.bytesize)
         return bits2integer(data, self.signed)
@@ -1763,7 +1763,7 @@ class Restreamed(Subconstruct):
     :param encoderunit: ratio as int, encoder takes that many bytes at once
     :param decoder: a function that takes a b-string and returns a b-string (used when parsing)
     :param decoderunit: ratio as int, decoder takes that many bytes at once
-    :param decoderunitname: English string that describes the unit returned by the decoder. Used for error messages.
+    :param decoderunitname: English string that describes the units (plural) returned by the decoder. Used for error messages.
     :param sizecomputer: a function that computes amount of bytes outputed by some bytes
 
     Example::
