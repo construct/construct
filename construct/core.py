@@ -170,10 +170,12 @@ class Construct(object):
 
         Files, pipes, sockets, and other streaming sources of data are handled by this method.
         """
-        if context is None:
-            context = Container()
-        context.update(kw)
-        return self._parse(stream, context, "parsing")
+        context2 = Container()
+        if context is not None:
+            context2.update(context)
+        context2.update(kw)
+
+        return self._parse(stream, context2, "(parsing)")
 
     def _parse(self, stream, context, path):
         """
@@ -199,10 +201,12 @@ class Construct(object):
 
         :returns: None
         """
-        if context is None:
-            context = Container()
-        context.update(kw)
-        self._build(obj, stream, context, "building")
+        context2 = Container()
+        if context is not None:
+            context2.update(context)
+        context2.update(kw)
+
+        self._build(obj, stream, context2, "(building)")
 
     def _build(self, obj, stream, context, path):
         """
@@ -1720,7 +1724,7 @@ class Seek(Construct):
 
     .. seealso:: Analog :func:`~construct.core.Pointer` wrapper that has same side effect but also processed a subcon.
 
-    :param at: where to jump to, can ne an int or a context lambda
+    :param at: where to jump to, can be an int or a context lambda
     :param whence: is the offset from beginning (0) or from current position (1) or from ending (2), can be an int or a context lambda, default is 0
 
     Example::
@@ -1771,25 +1775,31 @@ class Restreamed(Subconstruct):
         Bitwise  <--> Restreamed(subcon, bits2bytes, 8, bytes2bits, 1, lambda n: n//8)
         Bytewise <--> Restreamed(subcon, bytes2bits, 1, bits2bytes, 8, lambda n: n*8)
     """
-    __slots__ = ["stream2", "sizecomputer"]
+
+    __slots__ = ["sizecomputer", "encoder", "encoderunit", "decoder", "decoderunit"]
     def __init__(self, subcon, encoder, encoderunit, decoder, decoderunit, decoderunitname, sizecomputer):
         super(Restreamed, self).__init__(subcon)
-        self.stream2 = RestreamedBytesIO(None, encoder, encoderunit, decoder, decoderunit, decoderunitname)
+        self.encoder = encoder
+        self.encoderunit = encoderunit
+        self.decoder = decoder
+        self.decoderunit = decoderunit
+        self.decoderunitname = decoderunitname
         self.sizecomputer = sizecomputer
     def _parse(self, stream, context, path):
-        self.stream2.substream = stream
-        obj = self.subcon._parse(self.stream2, context, path)
-        self.stream2.close()
+        stream2 = RestreamedBytesIO(stream, self.encoder, self.encoderunit, self.decoder, self.decoderunit, self.decoderunitname)
+        obj = self.subcon._parse(stream2, context, path)
+        stream2.close()
         return obj
     def _build(self, obj, stream, context, path):
-        self.stream2.substream = stream
-        buildret = self.subcon._build(obj, self.stream2, context, path)
-        self.stream2.close()
+        stream2 = RestreamedBytesIO(stream, self.encoder, self.encoderunit, self.decoder, self.decoderunit, self.decoderunitname)
+        buildret = self.subcon._build(obj, stream2, context, path)
+        stream2.close()
         return buildret
     def _sizeof(self, context, path):
         if self.sizecomputer is None:
             raise SizeofError("cannot calculate size")
-        return self.sizecomputer(self.subcon._sizeof(context, path))
+        else:
+            return self.sizecomputer(self.subcon._sizeof(context, path))
 
 
 class Rebuffered(Subconstruct):
