@@ -2832,8 +2832,8 @@ def Enum(subcon, default=NotImplemented, **mapping):
         b'\x01'
     """
     encmapping = mapping.copy()
-    for v in mapping.values():
-        encmapping[v] = v
+    encmapping.update({v:v for v in mapping.values()})
+
     return Mapping(subcon,
         encoding = encmapping,
         decoding = dict((v,k) for k, v in mapping.items()),
@@ -3158,7 +3158,7 @@ def Filter(predicate, subcon):
         >>> Filter(obj_ != 0, Byte[:]).build([0,1,0,2,0])
         b'\x01\x02'
     """
-    return ExprSymmetricAdapter(subcon, lambda obj,ctx: list([x for x in obj if predicate(x,ctx)]))
+    return ExprSymmetricAdapter(subcon, lambda obj,ctx: list(filter(lambda x: predicate(x,ctx), obj)) )
 
 
 class Check(Construct):
