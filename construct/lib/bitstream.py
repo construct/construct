@@ -5,14 +5,15 @@ from sys import maxsize
 
 
 class RestreamedBytesIO(object):
-    __slots__ = ["substream", "encoder", "encoderunit", "decoder", "decoderunit", "rbuffer", "wbuffer","sincereadwritten"]
+    __slots__ = ["substream", "encoder", "encoderunit", "decoder", "decoderunit", "decoderunitname", "rbuffer", "wbuffer","sincereadwritten"]
 
-    def __init__(self, substream, encoder, encoderunit, decoder, decoderunit):
+    def __init__(self, substream, encoder, encoderunit, decoder, decoderunit, decoderunitname):
         self.substream = substream
         self.encoder = encoder
         self.encoderunit = encoderunit
         self.decoder = decoder
         self.decoderunit = decoderunit
+        self.decoderunitname = decoderunitname
         self.rbuffer = b""
         self.wbuffer = b""
         self.sincereadwritten = 0
@@ -23,7 +24,7 @@ class RestreamedBytesIO(object):
         while len(self.rbuffer) < count:
             data = self.substream.read(self.decoderunit)
             if data is None or len(data) == 0:
-                raise IOError("Restreamed cannot satisfy read request of %d bytes" % count)
+                raise IOError("Restreamed cannot satisfy read request of %d %s" % (count, self.decoderunitname))
             self.rbuffer += self.decoder(data)
         data, self.rbuffer = self.rbuffer[:count], self.rbuffer[count:]
         self.sincereadwritten += count
@@ -40,9 +41,9 @@ class RestreamedBytesIO(object):
 
     def close(self):
         if len(self.rbuffer):
-            raise ValueError("closing stream but %d unread bytes remain, %d is decoded unit" % (len(self.rbuffer), self.decoderunit))
+            raise ValueError("closing stream but %d unread %s remain, %d is decoded unit" % (len(self.rbuffer), self.decoderunitname, self.decoderunit))
         if len(self.wbuffer):
-            raise ValueError("closing stream but %d unwritten bytes remain, %d is encoded unit" % (len(self.wbuffer), self.encoderunit))
+            raise ValueError("closing stream but %d unwritten %s remain, %d is encoded unit" % (len(self.wbuffer), self.decoderunitname, self.encoderunit))
 
     def seekable(self):
         return False
