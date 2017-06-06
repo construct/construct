@@ -357,8 +357,6 @@ class Tunnel(Subconstruct):
         raise NotImplementedError()
     def _encode(self, data, context):
         raise NotImplementedError()
-    def _sizeof(self, context, path):
-        raise SizeofError("cannot calculate size")
 
 
 #===============================================================================
