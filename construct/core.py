@@ -846,7 +846,7 @@ class Struct(Construct):
     def _parse(self, stream, context, path):
         obj = Container()
         context = Container(_ = context)
-        for i,sc in enumerate(self.subcons):
+        for sc in self.subcons:
             try:
                 subobj = sc._parse(stream, context, path)
                 if sc.flagembedded:
@@ -863,7 +863,7 @@ class Struct(Construct):
     def _build(self, obj, stream, context, path):
         context = Container(_ = context)
         context.update(obj)
-        for i,sc in enumerate(self.subcons):
+        for sc in self.subcons:
             try:
                 if sc.flagembedded:
                     subobj = obj
@@ -2123,8 +2123,6 @@ class RawCopy(Subconstruct):
         >>>> RawCopy(Byte).build(dict(value=255))
         '\xff'
     """
-    def __init__(self, subcon):
-        super(RawCopy, self).__init__(subcon)
     def _parse(self, stream, context, path):
         offset1 = stream.tell()
         obj = self.subcon._parse(stream, context, path)
@@ -2374,7 +2372,7 @@ class LazyStruct(Construct):
         keys = Container()
         values = {}
         position = stream.tell()
-        for i,(sc,size) in enumerate(zip(self.subcons, self.subsizes)):
+        for (sc,size) in zip(self.subcons, self.subsizes):
             if sc.flagembedded:
                 subobj = list(sc._parse(stream, context, path).items())
                 keys.update(subobj)
@@ -2396,7 +2394,7 @@ class LazyStruct(Construct):
     def _build(self, obj, stream, context, path):
         context = Container(_ = context)
         context.update(obj)
-        for i,sc in enumerate(self.subcons):
+        for sc in self.subcons:
             if sc.flagembedded:
                 subobj = obj
             elif sc.flagbuildnone:
@@ -2585,8 +2583,6 @@ class OnDemand(Subconstruct):
         >>> OnDemand(Byte).build(_)
         b'\xff'
     """
-    def __init__(self, subcon):
-        super(OnDemand, self).__init__(subcon)
     def _parse(self, stream, context, path):
         offset = stream.tell()
         stream.seek(self.subcon._sizeof(context, path), 1)
@@ -2836,7 +2832,7 @@ def Enum(subcon, default=NotImplemented, **mapping):
         b'\x01'
     """
     encmapping = mapping.copy()
-    for k,v in mapping.items():
+    for v in mapping.values():
         encmapping[v] = v
     return Mapping(subcon,
         encoding = encmapping,
@@ -3162,7 +3158,7 @@ def Filter(predicate, subcon):
         >>> Filter(obj_ != 0, Byte[:]).build([0,1,0,2,0])
         b'\x01\x02'
     """
-    return ExprSymmetricAdapter(subcon, lambda obj,ctx: list(filter(lambda x: predicate(x,ctx), obj)) )
+    return ExprSymmetricAdapter(subcon, lambda obj,ctx: list([x for x in obj if predicate(x,ctx)]))
 
 
 class Check(Construct):
@@ -3271,7 +3267,6 @@ class StringPaddedTrimmed(Adapter):
         self.paddir = paddir
         self.trimdir = trimdir
     def _decode(self, obj, context):
-        length = self.length(context) if callable(self.length) else self.length
         if self.paddir == "right":
             obj = obj.rstrip(self.padchar)
         elif self.paddir == "left":
