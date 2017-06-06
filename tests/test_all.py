@@ -1445,3 +1445,22 @@ class TestCore(unittest.TestCase):
         )
         assert st1.build(dict(a={})) == b""
         assert st2.build(dict(b={})) == b""
+
+    @pytest.mark.xfail(reason="why fails? abstract parse was fixed, Struct uses a Container anyway")
+    def test_context(self):
+        st = Struct(Check(lambda ctx: ctx is Container))
+        st.parse(b"", context=dict())
+
+    def test_from_issue_362(self):
+        FORMAT = Struct(
+            "my_tell" / Tell,
+            "my_byte" / Byte,
+        )
+        BIT_FORMAT = BitStruct(
+            "my_tell" / Tell,
+            "my_bits" / Bit[8],
+        )
+        for i in range(5):
+            assert FORMAT.parse(b'\x00').my_tell == 0
+        for i in range(5):
+            assert BIT_FORMAT.parse(b'\x00').my_tell == 0
