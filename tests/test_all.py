@@ -1084,13 +1084,13 @@ class TestCore(unittest.TestCase):
         Struct(ProbeInto(this.inner)).build({})
 
     def test_restreamed(self):
-        assert Restreamed(Int16ub, ident, 1, ident, 1, ident).parse(b"\x00\x01") == 1
-        assert Restreamed(Int16ub, ident, 1, ident, 1, ident).build(1) == b"\x00\x01"
-        assert Restreamed(Int16ub, ident, 1, ident, 1, ident).sizeof() == 2
-        assert raises(Restreamed(VarInt, ident, 1, ident, 1, ident).sizeof) == SizeofError
-        assert Restreamed(Bytes(2), None, None, lambda b: b*2, 1, None).parse(b"a") == b"aa"
-        assert Restreamed(Bytes(1), lambda b: b*2, 1, None, None, None).build(b"a") == b"aa"
-        assert Restreamed(Bytes(5), None, None, None, None, lambda n: n*2).sizeof() == 10
+        assert Restreamed(Int16ub, ident, 1, ident, 1, "bytes", ident).parse(b"\x00\x01") == 1
+        assert Restreamed(Int16ub, ident, 1, ident, 1, "bytes", ident).build(1) == b"\x00\x01"
+        assert Restreamed(Int16ub, ident, 1, ident, 1, "bytes", ident).sizeof() == 2
+        assert raises(Restreamed(VarInt, ident, 1, ident, 1, "bytes", ident).sizeof) == SizeofError
+        assert Restreamed(Bytes(2), None, None, lambda b: b*2, 1, "bytes", None).parse(b"a") == b"aa"
+        assert Restreamed(Bytes(1), lambda b: b*2, 1, None, None, "bytes", None).build(b"a") == b"aa"
+        assert Restreamed(Bytes(5), None, None, None, None, "bytes", lambda n: n*2).sizeof() == 10
 
     def test_rebuffered(self):
         data = b"0" * 1000
