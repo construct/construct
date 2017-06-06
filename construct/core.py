@@ -1776,7 +1776,7 @@ class Restreamed(Subconstruct):
         Bytewise <--> Restreamed(subcon, bytes2bits, 1, bits2bytes, 8, lambda n: n*8)
     """
 
-    __slots__ = ["sizecomputer", "encoder", "encoderunit", "decoder", "decoderunit"]
+    __slots__ = ["sizecomputer", "encoder", "encoderunit", "decoder", "decoderunit", "decoderunitname"]
     def __init__(self, subcon, encoder, encoderunit, decoder, decoderunit, decoderunitname, sizecomputer):
         super(Restreamed, self).__init__(subcon)
         self.encoder = encoder
