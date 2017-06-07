@@ -278,6 +278,7 @@ class TestCore(unittest.TestCase):
         assert Struct("a" / Byte, "b" / Int16ub, "inner" / Struct("c" / Byte, "d" / Byte)).build(Container(a=1)(b=2)(inner=Container(c=3)(d=4))) == b"\x01\x00\x02\x03\x04"
         assert Struct("a" / Byte, "b" / Int16ub, Embedded("inner" / Struct("c" / Byte, "d" / Byte))).parse(b"\x01\x00\x02\x03\x04") == Container(a=1)(b=2)(c=3)(d=4)
         assert Struct("a" / Byte, "b" / Int16ub, Embedded("inner" / Struct("c" / Byte, "d" / Byte))).build(Container(a=1)(b=2)(c=3)(d=4)) == b"\x01\x00\x02\x03\x04"
+        assert Struct("inner" / Struct("a" / Byte, "b" / If(this.a == 1, Byte), "c" / If(this.inner.a == 0, Byte))).sizeof(Container(inner=Container(a=1, b=0))) == 2
 
     @pytest.mark.xfail(not supportskwordered, reason="ordered kw was introduced in 3.6")
     def test_struct_kwctor(self):
