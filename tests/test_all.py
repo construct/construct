@@ -933,6 +933,10 @@ class TestCore(unittest.TestCase):
         assert dict(LazyStruct(Pass, Computed(lambda ctx: 0), Terminated).parse(b"")) == dict()
         assert LazyStruct(Pass, Computed(lambda ctx: 0), Terminated).build(dict()) == b""
 
+    @pytest.mark.xfail(not supportskwordered, reason="ordered kw was introduced in 3.6")
+    def test_lazystruct_kwctor(self):
+        common(LazyStruct(a=Byte, b=Byte, c=Byte, d=Byte), b"\x01\x02\x03\x04", Container(a=1,b=2,c=3,d=4), 4)
+        
     def test_lazystruct_nested_embedded(self):
         assert dict(LazyStruct("a"/Byte,"b"/LazyStruct("c"/Byte)).parse(b"\x01\x02")) == dict(a=1,b=dict(c=2))
         assert LazyStruct("a"/Byte,"b"/LazyStruct("c"/Byte)).build(dict(a=1,b=dict(c=2))) == b"\x01\x02"
