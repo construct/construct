@@ -838,11 +838,8 @@ class Struct(Construct):
     """
     __slots__ = ["subcons"]
     def __init__(self, *subcons, **kw):
-        subcons = list(subcons)
-        for k,v in kw.items():
-            subcons.append(k / v)
         super(Struct, self).__init__()
-        self.subcons = subcons
+        self.subcons = list(subcons) + list(k/v for k,v in kw.items()) 
     def _parse(self, stream, context, path):
         obj = Container()
         context = Container(_ = context)
