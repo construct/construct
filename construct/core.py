@@ -2336,7 +2336,7 @@ class LazyStruct(Construct):
     __slots__ = ["subcons", "offsetmap", "totalsize", "subsizes", "keys"]
     def __init__(self, *subcons, **kw):
         super(LazyStruct, self).__init__()
-        self.subcons = list(subcons) + list(k/v for k,v in kw.items())
+        self.subcons = list(subcons) + list(k/v for k,v in kw.items()) 
 
         try:
             keys = Container()
