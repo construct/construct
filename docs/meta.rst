@@ -7,7 +7,7 @@ Meta constructs are the key to the declarative power of Construct. Meta construc
 In order to see the context, let's try this snippet:
 
 >>> class PrintContext(Construct):
-...     def _parse(self, stream, context):
+...     def _parse(self, stream, context, path):
 ...         print(context)
 ...
 >>> st = Struct(
