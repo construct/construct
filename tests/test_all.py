@@ -425,20 +425,15 @@ class TestCore(unittest.TestCase):
         common(If(False, Int8ub), b"", None, 0)
 
     def test_issue_375(self):
-        foo = Struct(
-            "data" / Byte,
-            "bar" / If(this.data in [1, 2, 3], Const(b"4"))
-            )
-        bar = Struct(
-             "data" / Byte,
-             "bar" / If(lambda ctx: ctx.data in [1, 2, 3], Const(b"4"))
-             )
-
-        assert bar.build({"data": 7}) == b'\x07'
-        assert foo.build({"data": 7}) == b'\x07'
-        assert foo.build({"data": 7}) == bar.build({"data": 7})
-
-
+        st1 = Struct(
+            "if" / If(this.data in [1,2,3], Const(b"4")),
+        )
+        st2 = Struct(
+             "if" / If(lambda ctx: ctx.data in [1,2,3], Const(b"4")),
+        )
+        assert st1.build(data=7) == b'\x07'
+        assert st2.build(data=7) == b'\x07'
+        
     def test_padding(self):
         assert Padding(4).parse(b"\x00\x00\x00\x00") == None
         assert Padding(4).build(None) == b"\x00\x00\x00\x00"
