@@ -8,3 +8,4 @@ dist/
 build/
 .pypirc
 .cache
+.tox
