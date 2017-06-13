@@ -426,13 +426,17 @@ class TestCore(unittest.TestCase):
 
     def test_issue_375(self):
         st1 = Struct(
-            "if" / If(this.data in [1,2,3], Const(b"4")),
+            "if"  / If(this.data     in [1,2,3], Const(b"4")),
+            "not" / If(this.data not in [1,2,3], Const(b"5")),
         )
         st2 = Struct(
-             "if" / If(lambda ctx: ctx.data in [1,2,3], Const(b"4")),
+             "if"  / If(lambda ctx: ctx.data     in [1,2,3], Const(b"4")),
+             "not" / If(lambda ctx: ctx.data not in [1,2,3], Const(b"5")),
         )
-        assert st1.build(data=7) == b'\x07'
-        assert st2.build(data=7) == b'\x07'
+        assert st1.build(data=1) == b'4'
+        assert st1.build(data=7) == b'5'
+        assert st2.build(data=1) == b'4'
+        assert st2.build(data=7) == b'5'
         
     def test_padding(self):
         assert Padding(4).parse(b"\x00\x00\x00\x00") == None
