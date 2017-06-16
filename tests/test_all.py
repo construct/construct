@@ -981,6 +981,10 @@ class TestCore(unittest.TestCase):
         assert LazySequence(Int8ub,Int16ub).build([1,2]) == Sequence(Int8ub,Int16ub).build([1,2])
         assert LazySequence(Int8ub,Int16ub).sizeof() == Sequence(Int8ub,Int16ub).sizeof()
 
+    @pytest.mark.xfail(not supportskwordered, reason="ordered kw was introduced in 3.6")
+    def test_lazysequence_kwctor(self):
+        common(LazySequence(a=Byte, b=Byte, c=Byte, d=Byte), b"\x01\x02\x03\x04", [1,2,3,4], 4)
+        
     def test_lazysequence_nested_embedded(self):
         assert LazySequence(Int8ub, Int16ub, LazySequence(Int8ub, Int8ub)).parse(b"\x01\x00\x02\x03\x04") == [1,2,[3,4]]
         assert LazySequence(Int8ub, Int16ub, LazySequence(Int8ub, Int8ub)).build([1,2,[3,4]]) == b"\x01\x00\x02\x03\x04"
