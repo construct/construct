@@ -2483,7 +2483,7 @@ class LazySequence(Construct):
     __slots__ = ["subcons", "offsetmap", "totalsize", "subsizes"]
     def __init__(self, *subcons, **kw):
         super(LazySequence, self).__init__()
-        self.subcons = subcons
+        self.subcons = list(subcons) + list(k/v for k,v in kw.items())
 
         try:
             self.offsetmap = {}
