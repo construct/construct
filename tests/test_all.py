@@ -381,8 +381,10 @@ class TestCore(unittest.TestCase):
     def test_terminated(self):
         common(Terminated, b"", None, 0)
         common(Struct("end"/Terminated), b"", Container(end=None), 0)
+        common(BitStruct("end"/Terminated), b"", Container(end=None), 0)
         assert raises(Terminated.parse, b"x") == TerminatedError
         assert raises(Struct("end"/Terminated).parse, b"x") == TerminatedError
+        assert raises(BitStruct("end"/Terminated).parse, b"x") == TerminatedError
 
     def test_error(self):
         assert raises(Error.parse, b"") == ExplicitError
@@ -1381,7 +1383,7 @@ class TestCore(unittest.TestCase):
 
     def test_hanging_issue_280(self):
         st = BitStruct('a'/BitsInteger(20), 'b'/BitsInteger(12))
-        assert raises(st.parse, b'\x00') == IOError
+        assert raises(st.parse, b'\x00') == FieldError
 
     def test_nonbytes_checksum_issue_323(self):
         st = Struct(
