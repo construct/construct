@@ -390,7 +390,7 @@ section = "section" / Struct(
             )
         )
     ),
-    
+
     "relocations" / OnDemandPointer(this.relocations_pointer,
         Array(this.number_of_relocations,
             Struct(
@@ -409,7 +409,7 @@ pe32_file = "pe32_file" / Struct(
     "_start_of_optional_header" / Tell,
     optional_header,
     "_end_of_optional_header" / Tell,
-    Padding(lambda ctx: min(0, 
+    Padding(lambda ctx: min(0,
             ctx.coff_header.optional_header_size -
             ctx._end_of_optional_header +
             ctx._start_of_optional_header
@@ -419,8 +419,6 @@ pe32_file = "pe32_file" / Struct(
     # sections
     "sections" / Array(this.coff_header.number_of_sections, section)
 )
-
-#pe32_file = Debugger(pe32_file)
 
 
 if __name__ == "__main__":
