@@ -1,3 +1,7 @@
+##############################################################
+# WARNING: HEADER IS SKIPPED NOT PARSED, DATETIME CAN BE WRONG
+# https://wiki.wireshark.org/Development/LibpcapFileFormat
+##############################################################
 """
 tcpdump capture file
 """
@@ -28,7 +32,3 @@ cap_file = Struct(
     Padding(24),
     "packets" / GreedyRange(packet),
 )
-
-print("WARNING: header is skipped not parsed, datetime can be wrong")
-print("https://wiki.wireshark.org/Development/LibpcapFileFormat")
-
