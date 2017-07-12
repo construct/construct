@@ -72,3 +72,6 @@ class TestFormats(unittest.TestCase):
     def test_snoop(self):
         commondump(snoop_file, "snoop1")
 
+    def test_pe32file(self):
+        commondump(pe32_file, "python.exe")
+

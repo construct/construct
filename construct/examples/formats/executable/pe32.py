@@ -10,35 +10,65 @@ http://download.microsoft.com/download/9/c/5/9c5b2167-8017-4bae-9fde-d599bac8184
 """
 import time
 
-from construct import *
+from construct import (
+    Adapter,
+    Array,
+    Bytes,
+    Const,
+    Container,
+    Enum,
+    ExprAdapter,
+    FlagsEnum,
+    HexDump,
+    If,
+    IfThenElse,
+    Int16sl,
+    Int16ul,
+    Int32ul,
+    Int64ul,
+    Int8ul,
+    OnDemand,
+    OnDemandPointer,
+    Padding,
+    Pass,
+    Pointer,
+    String,
+    Struct,
+    Tell,
+    this,
+)
 
 
 class UTCTimeStampAdapter(Adapter):
     def _decode(self, obj, context):
         return time.ctime(obj)
+
     def _encode(self, obj, context):
         return int(time.mktime(time.strptime(obj)))
 
-def UTCTimeStamp(name):
-    return UTCTimeStampAdapter(ULInt32(name))
+
+def UTCTimeStamp():
+    return UTCTimeStampAdapter(Int32ul)
+
 
 class NamedSequence(Adapter):
     """
     creates a mapping between the elements of a sequence and their respective
     names. this is useful for sequences of a variable length, where each
-    element in the sequence has a name (as is the case with the data 
+    element in the sequence has a name (as is the case with the data
     directories of the PE header)
     """
     __slots__ = ["mapping", "rev_mapping"]
     prefix = "unnamed_"
+
     def __init__(self, subcon, mapping):
         super(NamedSequence, self).__init__(subcon)
         self.mapping = mapping
         self.rev_mapping = dict((v, k) for k, v in mapping.items())
+
     def _encode(self, obj, context):
-        d = obj.__dict__
-        obj2 = [None] * len(d)
-        for name, value in d.items():
+        obj2 = [None] * len(obj)
+        for name, value in obj.items():
             if name in self.rev_mapping:
                 index = self.rev_mapping[name]
             elif name.startswith("__"):
@@ -50,6 +80,7 @@ class NamedSequence(Adapter):
                 raise ValueError("no mapping defined for %r" % (name,))
             obj2[index] = value
         return obj2
+
     def _decode(self, obj, context):
         obj2 = Container()
         for i, item in enumerate(obj):
@@ -61,40 +92,34 @@ class NamedSequence(Adapter):
         return obj2
 
 
-msdos_header = Struct("msdos_header",
+msdos_header = "msdos_header" / Struct(
     Const(b"MZ"),
-    ULInt16("partPag"),
-    ULInt16("page_count"),
-    ULInt16("relocation_count"),
-    ULInt16("header_size"),
-    ULInt16("minmem"),
-    ULInt16("maxmem"),
-    ULInt16("relocation_stackseg"),
-    ULInt16("exe_stackptr"),
-    ULInt16("checksum"),
-    ULInt16("exe_ip"),
-    ULInt16("relocation_codeseg"),
-    ULInt16("table_offset"),
-    ULInt16("overlay"),
+    "partPag" / Int16ul,
+    "page_count" / Int16ul,
+    "relocation_count" / Int16ul,
+    "header_size" / Int16ul,
+    "minmem" / Int16ul,
+    "maxmem" / Int16ul,
+    "relocation_stackseg" / Int16ul,
+    "exe_stackptr" / Int16ul,
+    "checksum" / Int16ul,
+    "exe_ip" / Int16ul,
+    "relocation_codeseg" / Int16ul,
+    "table_offset" / Int16ul,
+    "overlay" / Int16ul,
     Padding(8),
-    ULInt16("oem_id"),
-    ULInt16("oem_info"),
+    "oem_id" / Int16ul,
+    "oem_info" / Int16ul,
     Padding(20),
-    ULInt32("coff_header_pointer"),
-    Anchor("_assembly_start"),
-    OnDemand(
-        HexDumpAdapter(
-            Field("code", 
-                lambda ctx: ctx.coff_header_pointer - ctx._assembly_start
-            )
-        )
-    ),
+    "coff_header_pointer" / Int32ul,
+    "_assembly_start" / Tell,
+    "code" / OnDemand(HexDump(Bytes(this.coff_header_pointer - this._assembly_start))),
 )
 
-symbol_table = Struct("symbol_table",
-    String("name", 8, padchar = b"\x00"),
-    ULInt32("value"),
-    Enum(ExprAdapter(SLInt16("section_number"),
+symbol_table = "symbol_table" / Struct(
+    "name" / String(8, padchar = b"\x00"),
+    "value" / Int32ul,
+    "section_number" / Enum(ExprAdapter(Int16sl,
             encoder = lambda obj, ctx: obj + 1,
             decoder = lambda obj, ctx: obj - 1,
         ),
@@ -103,13 +128,13 @@ symbol_table = Struct("symbol_table",
         DEBUG = -3,
         _default_ = Pass,
     ),
-    Enum(ULInt8("complex_type"),
+    "complex_type" / Enum(Int8ul,
         NULL = 0,
         POINTER = 1,
         FUNCTION = 2,
         ARRAY = 3,
     ),
-    Enum(ULInt8("base_type"),
+    "base_type" / Enum(Int8ul,
         NULL = 0,
         VOID = 1,
         CHAR = 2,
@@ -127,7 +152,7 @@ symbol_table = Struct("symbol_table",
         UINT = 14,
         DWORD = 15,
     ),
-    Enum(ULInt8("storage_class"),
+    "storage_class" / Enum(Int8ul,
         END_OF_FUNCTION = 255,
         NULL = 0,
         AUTOMATIC = 1,
@@ -155,15 +180,13 @@ symbol_table = Struct("symbol_table",
         SECTION = 104,
         WEAK_EXTERNAL = 105,
     ),
-    ULInt8("number_of_aux_symbols"),
-    Array(lambda ctx: ctx.number_of_aux_symbols,
-        Bytes("aux_symbols", 18)
-    )
+    "number_of_aux_symbols" / Int8ul,
+    "aux_symbols" / Array(this.number_of_aux_symbols, Bytes(18))
 )
 
-coff_header = Struct("coff_header",
+coff_header = "coff_header" / Struct(
     Const(b"PE\x00\x00"),
-    Enum(ULInt16("machine_type"),
+    "machine_type" / Enum(Int16ul,
         UNKNOWN = 0x0,
         AM33 = 0x1d3,
         AMD64 = 0x8664,
@@ -186,12 +209,12 @@ coff_header = Struct("coff_header",
         WCEMIPSV2 = 0x169,
         _default_ = Pass
     ),
-    ULInt16("number_of_sections"),
-    UTCTimeStamp("time_stamp"),
-    ULInt32("symbol_table_pointer"),
-    ULInt32("number_of_symbols"),
-    ULInt16("optional_header_size"),
-    FlagsEnum(ULInt16("characteristics"),
+    "number_of_sections" / Int16ul,
+    "time_stamp" / UTCTimeStamp(),
+    "symbol_table_pointer" / Int32ul,
+    "number_of_symbols" / Int32ul,
+    "optional_header_size" / Int16ul,
+    "characteristics" / FlagsEnum(Int16ul,
         RELOCS_STRIPPED = 0x0001,
         EXECUTABLE_IMAGE = 0x0002,
         LINE_NUMS_STRIPPED = 0x0004,
@@ -208,53 +231,49 @@ coff_header = Struct("coff_header",
         UNIPROCESSOR_ONLY = 0x4000,
         BIG_ENDIAN_MACHINE = 0x8000,
     ),
-    
+
     # symbol table
-    Pointer(lambda ctx: ctx.symbol_table_pointer,
-        Array(lambda ctx: ctx.number_of_symbols, symbol_table)
-    )
+    "symbol_table" / Pointer(this.symbol_table_pointer, Array(this.number_of_symbols, symbol_table))
 )
 
-def PEPlusField(name):
-    return IfThenElse(name, lambda ctx: ctx.pe_type == "PE32_plus",
-        ULInt64(None),
-        ULInt32(None),
+def PEPlusField():
+    return IfThenElse(this.pe_type == "PE32_plus",
+        Int64ul,
+        Int32ul,
     )
 
-optional_header = Struct("optional_header",
+optional_header = "optional_header" / Struct(
     # standard fields
-    Enum(ULInt16("pe_type"),
+    "pe_type" / Enum(Int16ul,
         PE32 = 0x10b,
         PE32_plus = 0x20b,
     ),
-    ULInt8("major_linker_version"),
-    ULInt8("minor_linker_version"),
-    ULInt32("code_size"),
-    ULInt32("initialized_data_size"),
-    ULInt32("uninitialized_data_size"),
-    ULInt32("entry_point_pointer"),
-    ULInt32("base_of_code"),
-    
+    "major_linker_version" / Int8ul,
+    "minor_linker_version" / Int8ul,
+    "code_size" / Int32ul,
+    "initialized_data_size" / Int32ul,
+    "uninitialized_data_size" / Int32ul,
+    "entry_point_pointer" / Int32ul,
+    "base_of_code" / Int32ul,
+
     # only in PE32 files
-    If(lambda ctx: ctx.pe_type == "PE32",
-        ULInt32("base_of_data")
-    ),
-    
+    "base_of_data" / If(this.pe_type == "PE32", Int32ul),
+
     # WinNT-specific fields
-    PEPlusField("image_base"),
-    ULInt32("section_aligment"),
-    ULInt32("file_alignment"),
-    ULInt16("major_os_version"),
-    ULInt16("minor_os_version"),
-    ULInt16("major_image_version"),
-    ULInt16("minor_image_version"),
-    ULInt16("major_subsystem_version"),
-    ULInt16("minor_subsystem_version"),
+    "image_base" / PEPlusField(),
+    "section_aligment" / Int32ul,
+    "file_alignment" / Int32ul,
+    "major_os_version" / Int16ul,
+    "minor_os_version" / Int16ul,
+    "major_image_version" / Int16ul,
+    "minor_image_version" / Int16ul,
+    "major_subsystem_version" / Int16ul,
+    "minor_subsystem_version" / Int16ul,
     Padding(4),
-    ULInt32("image_size"),
-    ULInt32("headers_size"),
-    ULInt32("checksum"),
-    Enum(ULInt16("subsystem"),
+    "image_size" / Int32ul,
+    "headers_size" / Int32ul,
+    "checksum" / Int32ul,
+    "subsystem" / Enum(Int16ul,
         UNKNOWN = 0,
         NATIVE = 1,
         WINDOWS_GUI = 2,
@@ -268,23 +287,23 @@ optional_header = Struct("optional_header",
         XBOX = 14,
         _default_ = Pass
     ),
-    FlagsEnum(ULInt16("dll_characteristics"),
+    "dll_characteristics" / FlagsEnum(Int16ul,
         NO_BIND = 0x0800,
         WDM_DRIVER = 0x2000,
         TERMINAL_SERVER_AWARE = 0x8000,
     ),
-    PEPlusField("reserved_stack_size"),
-    PEPlusField("stack_commit_size"),
-    PEPlusField("reserved_heap_size"),
-    PEPlusField("heap_commit_size"),
-    ULInt32("loader_flags"),
-    ULInt32("number_of_data_directories"),
-    
+    "reserved_stack_size" / PEPlusField(),
+    "stack_commit_size" / PEPlusField(),
+    "reserved_heap_size" / PEPlusField(),
+    "heap_commit_size" / PEPlusField(),
+    "loader_flags" / Int32ul,
+    "number_of_data_directories" / Int32ul,
+
     NamedSequence(
-        Array(lambda ctx: ctx.number_of_data_directories,
-            Struct("data_directories",
-                ULInt32("address"),
-                ULInt32("size"),
+        Array(this.number_of_data_directories,
+            "data_directories" / Struct(
+                "address" / Int32ul,
+                "size" / Int32ul,
             )
         ),
         mapping = {
@@ -307,17 +326,17 @@ optional_header = Struct("optional_header",
     ),
 )
 
-section = Struct("section",
-    String("name", 8, padchar = b"\x00"),
-    ULInt32("virtual_size"),
-    ULInt32("virtual_address"),
-    ULInt32("raw_data_size"),
-    ULInt32("raw_data_pointer"),
-    ULInt32("relocations_pointer"),
-    ULInt32("line_numbers_pointer"),
-    ULInt16("number_of_relocations"),
-    ULInt16("number_of_line_numbers"),
-    FlagsEnum(ULInt32("characteristics"),
+section = "section" / Struct(
+    "name" / String(8, padchar = b"\x00"),
+    "virtual_size" / Int32ul,
+    "virtual_address" / Int32ul,
+    "raw_data_size" / Int32ul,
+    "raw_data_pointer" / Int32ul,
+    "relocations_pointer" / Int32ul,
+    "line_numbers_pointer" / Int32ul,
+    "number_of_relocations" / Int16ul,
+    "number_of_line_numbers" / Int16ul,
+    "characteristics" / FlagsEnum(Int32ul,
         TYPE_REG = 0x00000000,
         TYPE_DSECT = 0x00000001,
         TYPE_NOLOAD = 0x00000002,
@@ -358,63 +377,52 @@ section = Struct("section",
         MEM_SHARED = 0x10000000,
         MEM_EXECUTE = 0x20000000,
         MEM_READ = 0x40000000,
-        MEM_WRITE = 0x80000000,        
+        MEM_WRITE = 0x80000000,
     ),
-    
-    OnDemandPointer(lambda ctx: ctx.raw_data_pointer,
-        HexDumpAdapter(Field("raw_data", lambda ctx: ctx.raw_data_size))
-    ),
-    
-    OnDemandPointer(lambda ctx: ctx.line_numbers_pointer,
-        Array(lambda ctx: ctx.number_of_line_numbers,
-            Struct("line_numbers",
-                ULInt32("type"),
-                ULInt16("line_number"),
+
+    "raw_data" / OnDemandPointer(this.raw_data_pointer, HexDump(Bytes(this.raw_data_size))),
+
+    "line_numbers" / OnDemandPointer(this.line_numbers_pointer,
+        Array(this.number_of_line_numbers,
+            Struct(
+                "type" / Int32ul,
+                "line_number" / Int16ul,
             )
         )
     ),
     
-    OnDemandPointer(lambda ctx: ctx.relocations_pointer,
-        Array(lambda ctx: ctx.number_of_relocations,
-            Struct("relocations",
-                ULInt32("virtual_address"),
-                ULInt32("symbol_table_index"),
-                ULInt16("type"),
+    "relocations" / OnDemandPointer(this.relocations_pointer,
+        Array(this.number_of_relocations,
+            Struct(
+                "virtual_address" / Int32ul,
+                "symbol_table_index" / Int32ul,
+                "type" / Int16ul,
             )
         )
     ),
 )
 
-pe32_file = Struct("pe32_file",
+pe32_file = "pe32_file" / Struct(
     # headers
     msdos_header,
     coff_header,
-    Anchor("_start_of_optional_header"),
+    "_start_of_optional_header" / Tell,
     optional_header,
-    Anchor("_end_of_optional_header"),
+    "_end_of_optional_header" / Tell,
     Padding(lambda ctx: min(0, 
-            ctx.coff_header.optional_header_size - 
+            ctx.coff_header.optional_header_size -
             ctx._end_of_optional_header +
             ctx._start_of_optional_header
         )
     ),
-    
+
     # sections
-    Array(lambda ctx: ctx.coff_header.number_of_sections, section)   
+    "sections" / Array(this.coff_header.number_of_sections, section)
 )
+
+#pe32_file = Debugger(pe32_file)
 
 
 if __name__ == "__main__":
     print (pe32_file.parse_stream(open("../../../tests/NOTEPAD.EXE", "rb")))
     print (pe32_file.parse_stream(open("../../../tests/sqlite3.dll", "rb")))
-
-
-
-
-
-
-
-
-
-
-
