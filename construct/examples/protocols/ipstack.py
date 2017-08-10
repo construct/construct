@@ -734,6 +734,7 @@ layer3_payload = "next" / Switch(this.header.protocol,
     {
         "TCP" : layer4_tcp,
         "UDP" : layer4_udp,
+        "ICMP" : icmp_header,
     },
     default = Pass
 )
