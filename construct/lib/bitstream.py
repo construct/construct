@@ -24,7 +24,7 @@ class RestreamedBytesIO(object):
         while len(self.rbuffer) < count:
             data = self.substream.read(self.decoderunit)
             if data is None or len(data) == 0:
-                raise IOError("Restreamed cannot satisfy read request of %d %s" % (count, self.decoderunitname))
+                break
             self.rbuffer += self.decoder(data)
         data, self.rbuffer = self.rbuffer[:count], self.rbuffer[count:]
         self.sincereadwritten += count
