@@ -866,6 +866,9 @@ class Struct(Construct):
                     subobj = obj
                 elif sc.flagbuildnone:
                     subobj = obj.get(sc.name, None)
+                elif isinstance(sc, Switch) and sc.name is None:
+                    # Cope with unnamed switches with mixed embedding status.
+                    subobj = obj
                 else:
                     subobj = obj[sc.name]
 
@@ -1543,11 +1546,18 @@ class Switch(Construct):
         self.cases = cases
         self.default = default
         self.includekey = includekey
-        self.flagbuildnone = all(sc.flagbuildnone for sc in cases.values())
-        self.flagembedded = all(sc.flagembedded for sc in cases.values())
+        all_cases = list(cases.values())
+        if default is not self.NoDefault:
+            all_cases.append(default)
+        self.flagbuildnone = all(sc.flagbuildnone for sc in all_cases if sc is not Pass)
+        self.flagembedded = all(sc.flagembedded for sc in all_cases if sc is not Pass)
     def _parse(self, stream, context, path):
         key = self.keyfunc(context) if callable(self.keyfunc) else self.keyfunc
-        obj = self.cases.get(key, self.default)._parse(stream, context, path)
+        case = self.cases.get(key, self.default)
+        if self.name is None:
+            self.name = case.name  # Rename based upon the case name.
+        self.flagembedded = case.flagembedded
+        obj = case._parse(stream, context, path)
         return (key,obj) if self.includekey else obj
     def _build(self, obj, stream, context, path):
         if self.includekey:
@@ -1555,6 +1565,12 @@ class Switch(Construct):
         else:
             key = self.keyfunc(context) if callable(self.keyfunc) else self.keyfunc
         case = self.cases.get(key, self.default)
+        if self.name is None and case.name is not None:
+            self.name = case.name
+            try:
+                obj = obj[self.name]
+            except (KeyError, IndexError, TypeError):
+                pass
         return case._build(obj, stream, context, path)
     def _sizeof(self, context, path):
         try:

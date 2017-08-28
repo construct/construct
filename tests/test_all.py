@@ -418,6 +418,31 @@ class TestCore(unittest.TestCase):
         assert Switch(5, {1:Byte, 5:Int16ub}).sizeof() == 2
         assert raises(Switch(5, {}).sizeof) == SwitchError
 
+    def test_switch_embedded(self):
+        assert Switch(lambda ctx: 5, {1:'liz' / Byte, 5:'tom' / Int16ub}).parse(b'\x00\x02') == 2
+        assert Switch(lambda ctx: 5, {1:'liz' / Byte, 5:'tom' / Int16ub}).build(2) == b'\x00\x02'
+        assert Struct(Switch(lambda ctx: 5, {1:'liz' / Byte, 5:'tom' / Int16ub})).parse(b"\x00\x02") == Container(tom=2)
+        assert Struct(Switch(lambda ctx: 5, {1:'liz' / Byte, 5:'tom' / Int16ub})).build(Container(tom=2)) == b"\x00\x02"
+        # Named switches working properly.
+        #  Unnamed cases
+        assert Struct('lex' / Switch(lambda ctx: 5, {1:Byte, 5:Int16ub})).parse(b"\x00\x02") == Container(lex=2)
+        assert Struct('lex' / Switch(lambda ctx: 5, {1:Byte, 5:Int16ub})).build(Container(lex=2)) == b"\x00\x02"
+        #  Named cases (Less sensical as this simple test, but makes sense for reused complex cases.
+        #    liz and tom are bigger sub-constructs that get used multiple places.
+        assert Struct('lex' / Switch(lambda ctx: 5, {1:'liz' / Byte, 5:'tom' / Int16ub})).parse(b"\x00\x02") == Container(lex=2)
+        assert Struct('lex' / Switch(lambda ctx: 5, {1:'liz' / Byte, 5:'tom' / Int16ub})).build(Container(lex=2)) == b"\x00\x02"
+        #  Named cases with structs nesting.
+        assert Struct('lex' / Switch(lambda ctx: 5, {1:'liz' / Byte, 5:Struct('tom' / Byte, 'bob' / Byte)})).parse(b"\x00\x02") == Container(lex=Container(tom=0)(bob=2))
+        assert Struct('lex' / Switch(lambda ctx: 5, {1:'liz' / Byte, 5:Struct('tom' / Byte, 'bob' / Byte)})).build(Container(lex=Container(tom=0)(bob=2))) == b"\x00\x02"
+        # Dynamic building of embedded. (context is defined earlier while parsing or building. e.g. mode byte.)
+        assert Struct('mode' / Byte, Switch(lambda ctx: ctx.mode, {1:'liz' / Byte, 5:Embedded(Struct('tom' / Byte, 'bob' / Byte))})).parse(b"\x05\x00\x02") == Container(mode=5)(tom=0)(bob=2)
+        assert Struct('mode' / Byte, Switch(lambda ctx: ctx.mode, {1:'liz' / Byte, 5:Embedded(Struct('tom' / Byte, 'bob' / Byte))})).build(Container(mode=5)(tom=0)(bob=2)) == b"\x05\x00\x02"
+        assert Struct('mode' / Byte, Switch(lambda ctx: ctx.mode, {1:'liz' / Byte, 5:Embedded(Struct('tom' / Byte, 'bob' / Byte))})).parse(b"\x01\x03") == Container(mode=1)(liz=3)
+        assert Struct('mode' / Byte, Switch(lambda ctx: ctx.mode, {1:'liz' / Byte, 5:Embedded(Struct('tom' / Byte, 'bob' / Byte))})).build(Container(mode=1)(liz=3)) == b"\x01\x03"
+        # Dynamic building with renamed switch and embedded stuff overriding external rename.
+        assert Struct('mode' / Byte, 'lex' / Switch(lambda ctx: ctx.mode, {1:Embedded(Struct('liz' / Byte)), 5:Embedded(Struct('tom' / Byte, 'bob' / Byte))})).parse(b"\x01\x0A") == Container(mode=1)(liz=10)
+        assert Struct('mode' / Byte, 'lex' / Switch(lambda ctx: ctx.mode, {1:Embedded(Struct('liz' / Byte)), 5:Embedded(Struct('tom' / Byte, 'bob' / Byte))})).build(Container(mode=1)(liz=10)) == b"\x01\x0A"
+
     def test_ifthenelse(self):
         common(IfThenElse(True,  Int8ub, Int16ub), b"\x01", 1, 1)
         common(IfThenElse(False, Int8ub, Int16ub), b"\x00\x01", 1, 2)
@@ -1429,17 +1454,6 @@ class TestCore(unittest.TestCase):
             Embedded(If(len_(this.name) > 0,
                 Struct('index'/Byte),
             )),
-        )
-        assert st.parse(b'bob\x00\x05') == Container(name='bob')(index=5)
-        assert st.parse(b'\x00') == Container(name='')
-
-    @pytest.mark.xfail(strict=True, reason="this cannot work, Struct checks flagembedded before building")
-    def test_embeddedswitch_issue_312_cannotwork(self):
-        st = Struct(
-            'name'/CString(encoding="utf8"),
-            If(len_(this.name) > 0,
-                Embedded(Struct('index'/Byte)),
-            ),
         )
         assert st.parse(b'bob\x00\x05') == Container(name='bob')(index=5)
         assert st.parse(b'\x00') == Container(name='')
