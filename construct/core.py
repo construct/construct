@@ -1505,15 +1505,6 @@ def Optional(subcon):
     return Select(subcon, Pass)
 
 
-@singleton
-class NoDefault(Construct):
-    def _parse(self, stream, context, path):
-        raise SwitchError("no default case defined")
-    def _build(self, obj, stream, context, path):
-        raise SwitchError("no default case defined")
-    def _sizeof(self, context, path):
-        raise SwitchError("no default case defined")
-
 class Switch(Construct):
     r"""
     A conditional branch. Switch will choose the case to follow based on the return value of keyfunc. If no case is matched, and no default value is given, SwitchError will be raised.
@@ -1532,6 +1523,16 @@ class Switch(Construct):
         >>> Switch(this.n, { 1:Byte, 2:Int32ub }).build(5, dict(n=2))
         b'\x00\x00\x00\x05'
     """
+
+    @singleton
+    class NoDefault(Construct):
+        def _parse(self, stream, context, path):
+            raise SwitchError("no default case defined")
+        def _build(self, obj, stream, context, path):
+            raise SwitchError("no default case defined")
+        def _sizeof(self, context, path):
+            raise SwitchError("no default case defined")
+
     __slots__ = ["subcons", "keyfunc", "cases", "default", "includekey"]
     def __init__(self, keyfunc, cases, default=NoDefault, includekey=False):
         super(Switch, self).__init__()
@@ -1540,7 +1541,7 @@ class Switch(Construct):
         self.default = default
         self.includekey = includekey
         allcases = list(cases.values())
-        if default is not NoDefault:
+        if default is not self.NoDefault:
             allcases.append(default)
         self.flagbuildnone = all(sc.flagbuildnone for sc in allcases)
         self.flagembedded = all(sc.flagembedded for sc in allcases)
