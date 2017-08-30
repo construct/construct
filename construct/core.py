@@ -1523,7 +1523,7 @@ class Switch(Construct):
     :param keyfunc: a context function that returns a key which will choose a case, or a constant
     :param cases: a dictionary mapping keys to subcons
     :param default: a default field to use when the key is not found in the cases. if not supplied, an exception will be raised when the key is not found. Pass can be used for do-nothing
-    :param includekey: whether to include the key in the return value of parsing, defualt is False
+    :param includekey: whether to include the key in the return value of parsing, default is False
 
     Example::
 
