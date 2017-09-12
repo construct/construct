@@ -252,7 +252,7 @@ class TestCore(unittest.TestCase):
     def test_repeatuntil(self):
         assert RepeatUntil(obj_ == 9, Byte).parse(b"\x02\x03\x09garbage") == [2,3,9]
         assert RepeatUntil(obj_ == 9, Byte).build([2,3,9,1,1,1]) == b"\x02\x03\x09"
-        assert raises(RepeatUntil(obj_ == 9, Byte).parse, b"\x02\x03\x08") == RangeError
+        assert raises(RepeatUntil(obj_ == 9, Byte).parse, b"\x02\x03\x08") == FieldError
         assert raises(RepeatUntil(obj_ == 9, Byte).build, [2,3,8]) == RangeError
         assert raises(RepeatUntil(obj_ == 9, Byte).sizeof) == SizeofError
         assert RepeatUntil(lambda x,lst,ctx: lst[-2:]==[0,0], Byte).parse(b"\x01\x00\x00\xff") == [1,0,0]

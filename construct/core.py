@@ -1126,17 +1126,12 @@ class RepeatUntil(Subconstruct):
         super(RepeatUntil, self).__init__(subcon)
         self.predicate = predicate
     def _parse(self, stream, context, path):
-        try:
-            obj = []
-            while True:
-                subobj = self.subcon._parse(stream, context, path)
-                obj.append(subobj)
-                if self.predicate(subobj, obj, context):
-                    return ListContainer(obj)
-        except ExplicitError:
-            raise
-        except ConstructError:
-            raise RangeError("missing terminator when parsing")
+        obj = []
+        while True:
+            subobj = self.subcon._parse(stream, context, path)
+            obj.append(subobj)
+            if self.predicate(subobj, obj, context):
+                return ListContainer(obj)
     def _build(self, obj, stream, context, path):
         for i, subobj in enumerate(obj):
             self.subcon._build(subobj, stream, context, path)
