@@ -42,8 +42,8 @@ class TestThis(unittest.TestCase):
     def test_path(self):
         path = Path("path")
         x = ~((path.foo * 2 + 3 << 2) % 11)
-        assert str(x) == 'not ((((path.foo * 2) + 3) >> 2) % 11)'
-        assert repr(x) == 'not ((((path.foo * 2) + 3) >> 2) % 11)'
+        assert str(x) == 'not ((((path.foo * 2) + 3) << 2) % 11)'
+        assert repr(x) == 'not ((((path.foo * 2) + 3) << 2) % 11)'
         assert not x(dict(foo=7))
 
     def test_obj(self):
