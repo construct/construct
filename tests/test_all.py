@@ -1493,3 +1493,27 @@ class TestCore(unittest.TestCase):
             assert FORMAT.parse(b'\x00').my_tell == 0
         for i in range(5):
             assert BIT_FORMAT.parse(b'\x00').my_tell == 0
+
+    def test_lshift(self):
+        test = Struct(
+           "a" / Byte,
+           "lshift_0" / Computed(this["a"] << 0),
+           "lshift_1" / Computed(this["a"] << 1),
+           "lshift_2" / Computed(this["a"] << 2),
+        ).parse(b"\x02")
+        assert test["lshift_0"] == 2
+        assert test["lshift_1"] == 4
+        assert test["lshift_2"] == 8
+
+    def test_lshift(self):
+        test = Struct(
+           "a" / Byte,
+           "rshift_0" / Computed(this["a"] >> 0),
+           "rshift_1" / Computed(this["a"] >> 1),
+           "rshift_2" / Computed(this["a"] >> 2),
+        ).parse(b"\x08")
+        assert test["rshift_0"] == 8
+        assert test["rshift_1"] == 4
+        assert test["rshift_2"] == 2
+
+
