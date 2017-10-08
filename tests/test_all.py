@@ -1505,7 +1505,7 @@ class TestCore(unittest.TestCase):
         assert test["lshift_1"] == 4
         assert test["lshift_2"] == 8
 
-    def test_lshift(self):
+    def test_rshift(self):
         test = Struct(
            "a" / Byte,
            "rshift_0" / Computed(this["a"] >> 0),
