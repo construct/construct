@@ -2158,6 +2158,9 @@ class Default(Subconstruct):
 
     Size is the same as subcon size.
 
+    :param subcon: the subcon used to build value
+    :param value: the default value or context lambda
+
     Example::
 
         >>> d = Struct(
@@ -2174,7 +2177,11 @@ class Default(Subconstruct):
         self.value = value
         self.flagbuildnone = True
     def _build(self, obj, stream, context, path):
-        obj = self.value if obj is None else obj
+        if obj is None:
+            if not callable(self.value):
+                obj = self.value
+            else:
+                obj = self.value(context)
         self.subcon._build(obj, stream, context, path)
         return obj
 
