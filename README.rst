@@ -1,6 +1,10 @@
 Construct 2.8
 ===================
 
+.. image:: https://badges.gitter.im/construct-construct/Lobby.svg
+   :alt: Join the chat at https://gitter.im/construct-construct/Lobby
+   :target: https://gitter.im/construct-construct/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
 Construct is a powerful **declarative** and **symmetrical** parser and builder for binary data.
 
 Instead of writing *imperative code* to parse a piece of data, you declaratively define a *data structure* that describes your data. As this data structure is not code, you can use it in one direction to *parse* data into Pythonic objects, and in the other direction, to *build* objects into binary data.
