@@ -54,6 +54,11 @@ And here's how we use the special '_' name to get to the upper container in a ne
 >>> st.parse(b"12")
 Container(length1=49)(inner=Container(length2=50)(sum=99))
 
+
+
+Nesting and embedding
+============================
+
 Context entries can also be passed directly through `parse` and `build` methods. However, one should take into account that some classes are nesting context (like Struct Sequence Union FocusedSeq), so entries passed to these end up on upper level. Compare these two examples:
 
 >>> d = Bytes(this.n)
@@ -65,6 +70,18 @@ b'\x00\x00\x00\x00'
 ... )
 >>> d.parse(bytes(100), n=4)
 Container(data=b'\x00\x00\x00\x00')
+
+Embedding also complicates using the context. Notice that `count` is on same level as `data` because embedding simply "levels the plainfield".
+
+>>> outer = Struct(
+...     "count" / Byte,
+...     Embedded(Struct(
+...         "data" / Bytes(this.count),
+...     )),
+... )
+>>> outer.parse(b"\x041234")
+Container(count=4)(data=b'1234')
+
 
 
 Using `this` expression

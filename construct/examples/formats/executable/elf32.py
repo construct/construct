@@ -114,8 +114,8 @@ elf32_file = Struct(
         "version" / Byte,
         Padding(9),
     ),
-    "body" / Embedded(IfThenElse(this.identifier.encoding == "LSB",
+    "body" / IfThenElse(this.identifier.encoding == "LSB",
         elf32_body(Int16ul, Int32ul),
         elf32_body(Int16ub, Int32ub),
-    )),
+    ),
 )

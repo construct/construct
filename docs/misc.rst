@@ -11,19 +11,28 @@ Embedded
 
 Embeds a struct into the enclosing struct, merging fields. Can also embed sequences into sequences.
 
-.. warning:: You can use Embedded(Switch(...)) but not Switch(Embedded(...)). Sames applies to If and IfThenElse macros.
+.. warning:: 
 
->>> Struct("a"/Byte, Embedded(Struct("b"/Byte)), "c"/Byte).parse(b"abc")
-Container(a=97)(b=98)(c=99)
+    Can only be used between Struct Sequence FocusedSeq Union, although they can be used interchangably, for example Struct can embed fields from a Sequence. 
+
+    EmbeddedBitStruct is not currently supported (yet to be resolved).
+
+>>> outer = Struct(
+...     Embedded(Struct(
+...         "data" / Bytes(4),
+...     )),
+... )
+>>> outer.parse(b"1234")
+Container(data=b'1234')
 
 Renamed
 -------
 
-Adds a name string to a field (which by default is None). This class is only used internally and you should use the / operator instead. Naming fields is needed when working with Structs and sometimes Sequences.
+Adds a name string to a field (which by default is None). This class is only used internally and you should use the / operator instead. Naming fields is needed when working with Structs and Unions, but also sometimes with Sequences and FocusedSeq.
 
 ::
 
-	"num"/Byte  <-->  Renamed("num",Byte)
+    "num"/Byte  <-->  Renamed("num",Byte)
 
 
 Miscellaneous

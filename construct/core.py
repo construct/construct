@@ -128,6 +128,27 @@ class CodeGen:
         return "\n".join(self.blocks + [""])
 
 
+def mergefields(*subcons):
+
+    def select(sc):
+        if isinstance(sc, (Renamed, Embedded)):
+            return select(sc.subcon)
+        # experimental support for EmbeddedBitStruct
+        # if isinstance(sc, (Restreamed, CompilableMacro)):
+        #     return select(sc.subcon)
+        if isinstance(sc, (Struct, Sequence, FocusedSeq, Union)):
+            return list(sc.subcons)
+        raise ConstructError("Embedding only works with: Struct, Sequence, FocusedSeq, Union")
+
+    result = []
+    for sc in subcons:
+        if sc.flagembedded:
+            result.extend(select(sc))
+        else:
+            result.append(sc)
+    return result
+
+
 #===============================================================================
 # abstract constructs
 #===============================================================================
@@ -1792,15 +1813,15 @@ class Struct(Construct):
     r"""
     Sequence of usually named constructs, similar to structs in C. The members are parsed and build in the order they are defined. If a member is anonymous (its name is None) then it gets parsed and the value discarded, or it gets build from nothing (from None).
 
-    Some fields do not need to be named, since they are built without value anyway. See Const Padding Check Error Pass Terminated Seek for examples of such fields.
-
-    :class:`~construct.core.Embedded` fields do not need to be named.
+    Some fields do not need to be named, since they are built without value anyway. See: Const Padding Check Error Pass Terminated Seek Tell for examples of such fields. :class:`~construct.core.Embedded` fields do not need to (and should not) be named.
 
     Operator + can also be used to make Structs (although not recommended).
 
     Parses into a Container (dict with attribute and key access) where keys match subcon names. If field has embedded flag, its assuned to parse into a dict which entries get merged with result dict. Builds from a dict (not necessarily a Container) where each member gets a value from the dict matching the subcon name. If field has build-from-none flag, it gets build even when there is no mathing entry in the dict. If field has embedded flag, it gets build from the entire dict itself. Size is the sum of all subcon sizes, unless any subcon raises SizeofError.
 
     This class does context nesting, meaning its members are given access to a new dictionary where the "_" entry points to the outer context. When parsing, each member gets parsed and subcon parse return value is inserted into context under matching key only if the member was named. When building, the matching entry gets inserted into context before subcon gets build, and if subcon build returns a new value (not None) that gets replaced in the context.
+
+    This class supports embedding. :class:`~construct.core.Embedded` semantics dictate, that during instance creation (in ctor), each field is checked for embedded flag, and its subcons members merged. This changes behavior of some code examples. Only few classes are supported: Struct Sequence FocusedSeq Union, although those can be used interchangably (a Struct can embed a Sequence, or rather its members). EmbeddedBitStruct is not currently supported (yet to be resolved).
 
     :param \*subcons: Construct instances, list of members, some can be anonymous
     :param \*\*kw: Construct instances, list of members (requires Python 3.6)
@@ -1834,7 +1855,8 @@ class Struct(Construct):
 
     def __init__(self, *subcons, **kw):
         super(Struct, self).__init__()
-        self.subcons = list(subcons) + list(k/v for k,v in kw.items()) 
+        subcons = list(subcons) + list(k/v for k,v in kw.items())
+        self.subcons = mergefields(*subcons)
 
     def _parse(self, stream, context, path):
         obj = Container()
@@ -1842,14 +1864,9 @@ class Struct(Construct):
         for sc in self.subcons:
             try:
                 subobj = sc._parse(stream, context, path)
-                if sc.flagembedded:
-                    if subobj is not None:
-                        obj.update(subobj)
-                        context.update(subobj)
-                else:
-                    if sc.name:
-                        obj[sc.name] = subobj
-                        context[sc.name] = subobj
+                if sc.name:
+                    obj[sc.name] = subobj
+                    context[sc.name] = subobj
             except StopIteration:
                 break
         return obj
@@ -1859,27 +1876,18 @@ class Struct(Construct):
         context.update(obj)
         for sc in self.subcons:
             try:
-                if sc.flagembedded:
-                    subobj = obj
-                elif sc.flagbuildnone:
+                if sc.flagbuildnone:
                     subobj = obj.get(sc.name, None)
                 else:
                     subobj = obj[sc.name] # raises KeyError
 
-                if sc.flagembedded:
-                    if subobj is not None:
-                        context.update(subobj)
-                else:
-                    if sc.name:
-                        context[sc.name] = subobj
+                if sc.name:
+                    context[sc.name] = subobj
 
                 buildret = sc._build(subobj, stream, context, path)
                 if buildret is not None:
-                    if sc.flagembedded:
-                        context.update(buildret)
-                    else:
-                        if sc.name:
-                            context[sc.name] = buildret
+                    if sc.name:
+                        context[sc.name] = buildret
             except StopIteration:
                 break
         return context
@@ -1912,14 +1920,9 @@ class Struct(Construct):
                 this = Container(_ = this)
         """ % (fname, )
         for sc in self.subcons:
-            if sc.flagembedded:
-                block += """
-                this.update(%s)
-                """ % (sc._compileparse(code), )
-            else:
-                block += """
+            block += """
                 %s%s
-                """ % ("this[%r] = " % sc.name if sc.name else "", sc._compileparse(code))
+            """ % ("this[%r] = " % sc.name if sc.name else "", sc._compileparse(code))
         block += """
                 del this._
                 return this
@@ -1928,17 +1931,17 @@ class Struct(Construct):
         return "%s(io, this)" % (fname,)
 
 
-class Sequence(Struct):
+class Sequence(Construct):
     r"""
-    Sequence of usually un-named constructs. The members are parsed and build in the order they are defined. If a member is named, its parsed value gets inserted into the context. This allows using members that refer to previous members.
-
-    :class:`~construct.core.Embedded` fields do not need to be named.
+    Sequence of usually un-named constructs. The members are parsed and build in the order they are defined. If a member is named, its parsed value gets inserted into the context. This allows using members that refer to previous members. :class:`~construct.core.Embedded` fields do not need to (and should not) be named.
 
     Operator >> can also be used to make Sequences (although not recommended).
 
     Parses into a ListContainer (list with pretty-printing) where values are in same order as subcons. If field has embedded flag, its assumed to parse into a list which elements get merged with result list. Builds from a list (not necessarily a ListContainer) where each subcon is given the element at respective position. If field has embedded flag, it gets build from a following subset of entire list. Size is the sum of all subcon sizes, unless any subcon raises SizeofError.
 
     This class does context nesting, meaning its members are given access to a new dictionary where the "_" entry points to the outer context. When parsing, each member gets parsed and subcon parse return value is inserted into context under matching key only if the member was named. When building, the matching entry gets inserted into context before subcon gets build, and if subcon build returns a new value (not None) that gets replaced in the context.
+
+    This class supports embedding. :class:`~construct.core.Embedded` semantics dictate, that during instance creation (in ctor), each field is checked for embedded flag, and its subcons members merged. This changes behavior of some code examples. Only few classes are supported: Struct Sequence FocusedSeq Union, although those can be used interchangably (a Struct can embed a Sequence, or rather its members). EmbeddedBitStruct is not currently supported (yet to be resolved).
 
     :param \*subcons: Construct instances, list of members, some can be named
     :param \*\*kw: Construct instances, list of members (requires Python 3.6)
@@ -1960,6 +1963,12 @@ class Sequence(Struct):
         Alternative syntax, but requires Python 3.6:
         >>> Sequence(a=Byte, b=Byte, c=Byte, d=Byte)
     """
+    __slots__ = ["subcons"]
+
+    def __init__(self, *subcons, **kw):
+        super(Sequence, self).__init__()
+        subcons = list(subcons) + list(k/v for k,v in kw.items())
+        self.subcons = mergefields(*subcons)
 
     def _parse(self, stream, context, path):
         obj = ListContainer()
@@ -1967,10 +1976,7 @@ class Sequence(Struct):
         for i,sc in enumerate(self.subcons):
             try:
                 subobj = sc._parse(stream, context, path)
-                if sc.flagembedded:
-                    obj.extend(subobj)
-                else:
-                    obj.append(subobj)
+                obj.append(subobj)
                 if sc.name:
                     context[sc.name] = subobj
             except StopIteration:
@@ -1979,25 +1985,24 @@ class Sequence(Struct):
 
     def _build(self, obj, stream, context, path):
         context = Container(_ = context)
-        objiter = iter(obj)
-        for i,sc in enumerate(self.subcons):
+        for i,(sc,subobj) in enumerate(zip(self.subcons, obj)):
             try:
-                if sc.flagembedded:
-                    subobj = objiter
-                else:
-                    subobj = next(objiter)
-
                 if sc.name:
                     context[sc.name] = subobj
 
                 buildret = sc._build(subobj, stream, context, path)
                 if buildret is not None:
-                    if sc.flagembedded:
-                        context.update(buildret)
                     if sc.name:
                         context[sc.name] = buildret
             except StopIteration:
                 break
+
+    def _sizeof(self, context, path):
+        context = Container(_ = context)
+        try:
+            return sum(sc._sizeof(context, path) for sc in self.subcons)
+        except (KeyError, AttributeError):
+            raise SizeofError("cannot calculate size, key not found in context")
 
     def _emitparse(self, code):
         fname = "parse_sequence_%s" % code.allocateId()
@@ -2007,14 +2012,9 @@ class Sequence(Struct):
                 this = Container(_ = this)
         """ % (fname,)
         for sc in self.subcons:
-            if sc.flagembedded:
-                block += """
-                result.extend(%s)
-                """ % (sc._compileparse(code))
-            else:
-                block += """
+            block += """
                 result.append(%s)
-                """ % (sc._compileparse(code))
+            """ % (sc._compileparse(code))
             if sc.name:
                 block += """
                 this[%r] = result[-1]
@@ -2289,9 +2289,13 @@ class RepeatUntil(Subconstruct):
 #===============================================================================
 class Embedded(Subconstruct):
     r"""
-    Special wrapper that allows outer Struct or Sequence to see a field as embedded. Embedded does not change a field, only wraps it like a candy with a flag.
+    Special wrapper that allows outer many-subcons construct to merge fields from another many-subcons construct. Embedded does not change a field, only wraps it like a candy with a flag.
 
-    .. warning:: You can use Embedded(Switch(...)) but not Switch(Embedded(...)). Sames applies to If and IfThenElse macros.
+    .. warning:: 
+
+        Can only be used between Struct Sequence FocusedSeq Union, although they can be used interchangably, for example Struct can embed fields from a Sequence. 
+
+        EmbeddedBitStruct is not currently supported (yet to be resolved).
 
     Parsing building and size are deferred to subcon.
 
@@ -2299,9 +2303,13 @@ class Embedded(Subconstruct):
 
     Example::
 
-        >>> d = Struct("a"/Byte, Embedded(Struct("b"/Byte)), "c"/Byte)
-        >>> d.parse(b"abc")
-        Container(a=97)(b=98)(c=99)
+        >>> outer = Struct(
+        ...     Embedded(Struct(
+        ...         "data" / Bytes(4),
+        ...     )),
+        ... )
+        >>> outer.parse(b"1234")
+        Container(data=b'1234')
     """
 
     def __init__(self, subcon):
@@ -2649,6 +2657,8 @@ class FocusedSeq(Construct):
 
     This class does context nesting, meaning its members are given access to a new dictionary where the "_" entry points to the outer context. When parsing, each member gets parsed and subcon parse return value is inserted into context under matching key only if the member was named. When building, the matching entry gets inserted into context before subcon gets build, and if subcon build returns a new value (not None) that gets replaced in the context.
 
+    This class supports embedding. :class:`~construct.core.Embedded` semantics dictate, that during instance creation (in ctor), each field is checked for embedded flag, and its subcons members merged. This changes behavior of some code examples. Only few classes are supported: Struct Sequence FocusedSeq Union, although those can be used interchangably (a Struct can embed a Sequence, or rather its members). EmbeddedBitStruct is not currently supported (yet to be resolved).
+
     This class is used internally to implement :class:`~construct.core.PrefixedArray`.
 
     :param parsebuildfrom: integer index or string name or context lambda, selects a subcon
@@ -2680,7 +2690,8 @@ class FocusedSeq(Construct):
     def __init__(self, parsebuildfrom, *subcons, **kw):
         super(FocusedSeq, self).__init__()
         self.parsebuildfrom = parsebuildfrom
-        self.subcons = list(subcons) + list(k/v for k,v in kw.items())
+        subcons = list(subcons) + list(k/v for k,v in kw.items())
+        self.subcons = mergefields(*subcons)
 
     def _parse(self, stream, context, path):
         context = Container(_ = context)
@@ -2865,13 +2876,13 @@ class NamedTuple(Adapter):
 #===============================================================================
 class Union(Construct):
     r"""
-    Treats the same data as multiple constructs (similar to C union) so you can look at the data in multiple views.
-
-    :class:`~construct.core.Embedded` fields do not need to be named.
+    Treats the same data as multiple constructs (similar to C union) so you can look at the data in multiple views. Fields are usually named (so parsed values are inserted into dictionary under same name). :class:`~construct.core.Embedded` fields do not need to (and should not) be named.
 
     Parses subcons in sequence, and reverts the stream back to original position after each subcon. Afterwards, advances the stream by selected subcon. Builds from any subcon that has a matching key in given dict. Size is undefined (because parsefrom is not used for building).
 
     This class does context nesting, meaning its members are given access to a new dictionary where the "_" entry points to the outer context. When parsing, each member gets parsed and subcon parse return value is inserted into context under matching key only if the member was named. When building, the matching entry gets inserted into context before subcon gets build, and if subcon build returns a new value (not None) that gets replaced in the context.
+
+    This class supports embedding. :class:`~construct.core.Embedded` semantics dictate, that during instance creation (in ctor), each field is checked for embedded flag, and its subcons members merged. This changes behavior of some code examples. Only few classes are supported: Struct Sequence FocusedSeq Union, although those can be used interchangably (a Struct can embed a Sequence, or rather its members). EmbeddedBitStruct is not currently supported (yet to be resolved).
 
     .. warning:: If you skip `parsefrom` parameter then stream will be left back at starting offset, not seeked to any common denominator.
 
@@ -2898,14 +2909,15 @@ class Union(Construct):
         Alternative syntax, but requires Python 3.6:
         >>> Union(0, raw=Bytes(8), ints=Int32ub[2], shorts=Int16ub[4], chars=Byte[8])
     """
-    __slots__ = ["subcons","parsefrom"]
+    __slots__ = ["parsefrom", "subcons"]
 
     def __init__(self, parsefrom, *subcons, **kw):
         if isinstance(parsefrom, Construct):
             raise UnionError("parsefrom should be either: None int str context-function")
         super(Union, self).__init__()
-        self.subcons = list(subcons) + list(k/v for k,v in kw.items())
         self.parsefrom = parsefrom
+        subcons = list(subcons) + list(k/v for k,v in kw.items())
+        self.subcons = mergefields(*subcons)
 
     def _parse(self, stream, context, path):
         obj = Container()
@@ -2913,15 +2925,10 @@ class Union(Construct):
         fallback = _tell_stream(stream)
         forwards = {}
         for i,sc in enumerate(self.subcons):
-            if sc.flagembedded:
-                subobj = list(sc._parse(stream, context, path).items())
-                obj.update(subobj)
-                context.update(subobj)
-            else:
-                subobj = sc._parse(stream, context, path)
-                if sc.name:
-                    obj[sc.name] = subobj
-                    context[sc.name] = subobj
+            subobj = sc._parse(stream, context, path)
+            if sc.name:
+                obj[sc.name] = subobj
+                context[sc.name] = subobj
             forwards[i] = _tell_stream(stream)
             if sc.name:
                 forwards[sc.name] = _tell_stream(stream)
@@ -2937,29 +2944,20 @@ class Union(Construct):
         context = Container(_ = context)
         context.update(obj)
         for sc in self.subcons:
-            if sc.flagembedded:
-                subobj = obj
-            elif sc.flagbuildnone:
+            if sc.flagbuildnone:
                 subobj = obj.get(sc.name, None)
             elif sc.name in obj:
                 subobj = obj[sc.name]
             else:
                 continue
 
-            if sc.flagembedded:
-                if subobj is not None:
-                    context.update(subobj)
-            else:
-                if sc.name:
-                    context[sc.name] = subobj
+            if sc.name:
+                context[sc.name] = subobj
 
             buildret = sc._build(subobj, stream, context, path)
             if buildret is not None:
-                if sc.flagembedded:
-                    context.update(buildret)
-                else:
-                    if sc.name:
-                        context[sc.name] = buildret
+                if sc.name:
+                    context[sc.name] = buildret
             return buildret
         else:
             raise UnionError("cannot build, none of subcons were found in the dictionary %r" % (obj, ))
@@ -2991,14 +2989,9 @@ class Union(Construct):
             skipforward = self.subcons[index].sizeof() == self.subcons[-1].sizeof()
 
         for i,sc in enumerate(self.subcons):
-            if sc.flagembedded:
-                block += """
-                this.update(%s)
-                """ % (sc._compileparse(code), )
-            else:
-                block += """
+            block += """
                 %s%s
-                """ % ("this[%r] = " % sc.name if sc.name else "", sc._compileparse(code))
+            """ % ("this[%r] = " % sc.name if sc.name else "", sc._compileparse(code))
             if i == index and not skipforward:
                 block += """
                 forward = io.tell()
@@ -3515,20 +3508,23 @@ def BitStruct(*subcons, **kw):
     return Bitwise(Struct(*subcons, **kw))
 
 
-def EmbeddedBitStruct(*subcons, **kw):
-    r"""
-    Makes an embedded BitStruct.
+EmbeddedBitStruct = NotImplementedError
 
-    See :class:`~construct.core.Bitwise` and :class:`~construct.core.Embedded` and :class:`~construct.core.Struct` for semantics and raisable exceptions.
 
-    :param \*subcons: Construct instances, list of members, some can be anonymous
-    :param \*\*kw: Construct instances, list of members (requires Python 3.6)
+# def EmbeddedBitStruct(*subcons, **kw):
+#     r"""
+#     Makes an embedded BitStruct.
 
-    Example::
+#     See :class:`~construct.core.Bitwise` and :class:`~construct.core.Embedded` and :class:`~construct.core.Struct` for semantics and raisable exceptions.
 
-        EmbeddedBitStruct  <-->  Embedded(Bitwise(Struct(...)))
-    """
-    return Embedded(Bitwise(Struct(*subcons, **kw)))
+#     :param \*subcons: Construct instances, list of members, some can be anonymous
+#     :param \*\*kw: Construct instances, list of members (requires Python 3.6)
+
+#     Example::
+
+#         EmbeddedBitStruct  <-->  Embedded(Bitwise(Struct(...)))
+#     """
+#     return Embedded(Bitwise(Struct(*subcons, **kw)))
 
 
 #===============================================================================

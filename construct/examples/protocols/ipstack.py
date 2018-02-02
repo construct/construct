@@ -125,13 +125,14 @@ ProtocolEnum = Enum(Int8ub,
 )
 
 ipv4_header = Struct(
-    EmbeddedBitStruct(
+    "header" / BitStruct(
         "version" / Const(4, Nibble),
         "header_length" / ExprAdapter(Nibble,
             decoder = lambda obj, ctx: obj * 4,
             encoder = lambda obj, ctx: obj // 4,
         ),
     ),
+    "header_length" / Computed(this.header.header_length),
     "tos" / BitStruct(
         "precedence" / BitsInteger(3),
         "minimize_delay" / Flag,
@@ -143,7 +144,7 @@ ipv4_header = Struct(
     "total_length" / Int16ub,
     "payload_length" / Computed(this.total_length - this.header_length),
     "identification" / Int16ub,
-    EmbeddedBitStruct(
+    "flags" / BitStruct(
         Padding(1),
         "dont_fragment" / Flag,
         "more_fragments" / Flag,
@@ -172,7 +173,7 @@ Ipv6Address = ExprAdapter(Byte[16],
 )
 
 ipv6_header = Struct(
-    EmbeddedBitStruct(
+    "header" / BitStruct(
         "version" / OneOf(BitsInteger(4), [6]),
         "traffic_class" / BitsInteger(8),
         "flow_label" / BitsInteger(20),
@@ -562,7 +563,7 @@ tcp_header = Struct(
     "destination" / Int16ub,
     "seq" / Int32ub,
     "ack" / Int32ub,
-    EmbeddedBitStruct(
+    "header" / BitStruct(
         "header_length" / ExprAdapter(Nibble,
             encoder = lambda obj,ctx: obj // 4,
             decoder = lambda obj,ctx: obj * 4,
@@ -581,6 +582,7 @@ tcp_header = Struct(
             "fin" / Flag,
         ),
     ),
+    "header_length" / Computed(this.header.header_length),
     "window" / Int16ub,
     "checksum" / Int16ub,
     "urgent" / Int16ub,

@@ -132,31 +132,22 @@ Structs can be nested. Structs can contain other Structs, as well as any other c
 ...         "data" / Bytes(4),
 ...     )
 ... )
->>> st.parse(b"lala")
-Container(inner=Container(data=b'lala'))
+>>> st.parse(b"1234")
+Container(inner=Container(data=b'1234'))
 >>> print(_)
 Container:
     inner = Container:
-        data = b'lala'
+        data = b'1234'
 
-A Struct can be embedded into an enclosing Struct. This means all the fields of the embedded Struct will be merged into the fields of the enclosing Struct. This is useful when you want to split a big Struct into multiple parts, and then combine them all into one Struct. If names are duplicated, inner fields usually overtake the others but that is not guaranteed. 
+A Struct can be embedded into an enclosing Struct. This means that all fields of the embedded Struct get merged into the fields of the enclosing Struct. This is useful when you want to split a big Struct into multiple parts, and then combine them all into one Struct. If names are duplicated, consistency is not guaranteed (you should avoid that).
 
 >>> outer = Struct(
-...     "data" / Byte,
-...     "inner" / Embedded(Struct(
+...     Embedded(Struct(
 ...         "data" / Bytes(4),
 ...     )),
 ... )
->>> outer.parse(b"01234")
+>>> outer.parse(b"1234")
 Container(data=b'1234')
-
->>> outer = Struct(
-...     "data" / Byte,
-...     Embedded(st),
-... )
->>>
->>> outer.parse(b"01234")
-Container(data=48)(inner=Container(data=b'1234'))
 
 As you can see, Containers provide human-readable representations of the data, which is very important for large data structures.
 
