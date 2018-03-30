@@ -1921,7 +1921,7 @@ class FlagsEnum(Adapter):
         obj2 = Container()
         obj2._flagsenum = True
         for name,value in self.flags.items():
-            obj2[BitwisableString(name)] = bool(obj & value)
+            obj2[BitwisableString(name)] = (obj & value == value)
         return obj2
 
     def _encode(self, obj, context, path):
