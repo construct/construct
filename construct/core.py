@@ -745,10 +745,17 @@ class Validator(SymmetricAdapter):
     Needs to implement `_validate()` that returns a bool (or a truthy value)
 
     :param subcon: Construct instance
+    :param exception: optional. User provided exception to raise when check fails.
+
+    :raises ValidationError: validation function returned false. Can be overriden by `exception`
     """
+    def __init__(self, subcon, exception=None):
+        super(Validator, self).__init__(subcon)
+        self.exception = ValidationError if exception is None else exception
+
     def _decode(self, obj, context, path):
         if not self._validate(obj, context, path):
-            raise ValidationError("object failed validation: %s" % (obj,))
+            raise self.exception("object failed validation: %s" % (obj,))
         return obj
 
     def _validate(self, obj, context, path):
@@ -2507,9 +2514,10 @@ class Const(Subconstruct):
 
     :param value: expected value, usually a bytes literal
     :param subcon: optional, Construct instance, subcon used to build value from, assumed to be Bytes if value parameter was a bytes literal
+    :param exception: optional. User provided exception to raise when check fails.
 
     :raises StreamError: requested reading negative amount, could not read enough bytes, requested writing different amount than actual data, or could not write all bytes
-    :raises ConstError: parsed data does not match specified value, or building from wrong value
+    :raises ConstError: parsed data does not match specified value, or building from wrong value. Can be overriden by `exception`.
     :raises StringError: building from non-bytes value, perhaps unicode
 
     Example::
@@ -2525,7 +2533,7 @@ class Const(Subconstruct):
         b'\xff\x00\x00\x00'
     """
 
-    def __init__(self, value, subcon=None):
+    def __init__(self, value, subcon=None, exception=None):
         if subcon is None:
             if not isinstance(value, bytestringtype):
                 raise StringError("given non-bytes value, perhaps unicode? %r" % (value,))
@@ -2533,16 +2541,17 @@ class Const(Subconstruct):
         super(Const, self).__init__(subcon)
         self.value = value
         self.flagbuildnone = True
+        self.exception = ConstError if exception is None else exception
 
     def _parse(self, stream, context, path):
         obj = self.subcon._parsereport(stream, context, path)
         if obj != self.value:
-            raise ConstError("parsing expected %r but parsed %r" % (self.value, obj))
+            raise self.exception("parsing expected %r but parsed %r" % (self.value, obj))
         return obj
 
     def _build(self, obj, stream, context, path):
         if obj not in (None, self.value):
-            raise ConstError("building expected None or %r but got %r" % (self.value, obj))
+            raise self.exception("building expected None or %r but got %r" % (self.value, obj))
         return self.subcon._build(self.value, stream, context, path)
 
     def _sizeof(self, context, path):
@@ -2759,8 +2768,9 @@ class Check(Construct):
     Parsing and building return nothing (but check the condition). Size is 0 because stream is unaffected.
 
     :param func: bool or context lambda, that gets run on parsing and building
+    :param exception: optional. User provided exception to raise when check fails
 
-    :raises CheckError: lambda returned false
+    :raises CheckError: lambda returned false. Can be overriden by `exception`
 
     Can propagate any exception from the lambda, possibly non-ConstructError.
 
@@ -2770,20 +2780,21 @@ class Check(Construct):
         Check(len_(this.payload.data) == this.payload_len)
     """
 
-    def __init__(self, func):
+    def __init__(self, func, exception=None):
         super(Check, self).__init__()
         self.func = func
         self.flagbuildnone = True
+        self.exception = CheckError if exception is None else exception
 
     def _parse(self, stream, context, path):
         passed = self.func(context) if callable(self.func) else self.func
         if not passed:
-            raise CheckError("check failed during parsing")
+            raise self.exception("check failed during parsing")
 
     def _build(self, obj, stream, context, path):
         passed = self.func(context) if callable(self.func) else self.func
         if not passed:
-            raise CheckError("check failed during building")
+            raise self.exception("check failed during building")
 
     def _sizeof(self, context, path):
         return 0
@@ -5111,8 +5122,9 @@ class Checksum(Construct):
     :param checksumfield: a subcon field that reads the checksum, usually Bytes(int)
     :param hashfunc: function that takes bytes and returns whatever checksumfield takes when building, usually from hashlib module
     :param bytesfunc: context lambda that returns bytes (or object) to be hashed, usually like this.rawcopy1.data
+    :param exception: optional. User provided exception to raise when checksum check fails
 
-    :raises ChecksumError: parsing and actual checksum does not match actual data
+    :raises ChecksumError: parsing and actual checksum does not match actual data. Can be overriden by `exception`
 
     Can propagate any exception from the lambdas, possibly non-ConstructError.
 
@@ -5145,20 +5157,22 @@ class Checksum(Construct):
         d.build(dict(fields=dict(value={})))
     """
 
-    def __init__(self, checksumfield, hashfunc, bytesfunc):
+    def __init__(self, checksumfield, hashfunc, bytesfunc, exception=None):
         super(Checksum, self).__init__()
         self.checksumfield = checksumfield
         self.hashfunc = hashfunc
         self.bytesfunc = bytesfunc
         self.flagbuildnone = True
+        self.exception = ChecksumError if exception is None else exception
 
     def _parse(self, stream, context, path):
         hash1 = self.checksumfield._parsereport(stream, context, path)
         hash2 = self.hashfunc(self.bytesfunc(context))
         if hash1 != hash2:
-            raise ChecksumError("wrong checksum, read %r, computed %r" % (
+            raise self.exception("wrong checksum, read %r, computed %r" % (
                 hash1 if not isinstance(hash1,bytestringtype) else binascii.hexlify(hash1),
-                hash2 if not isinstance(hash2,bytestringtype) else binascii.hexlify(hash2), ))
+                hash2 if not isinstance(hash2,bytestringtype) else binascii.hexlify(hash2)
+            ))
         return hash1
 
     def _build(self, obj, stream, context, path):
@@ -5670,6 +5684,9 @@ class ExprValidator(Validator):
 
     :param subcon: Construct instance, subcon to adapt
     :param validator: lambda that takes (obj, context) and returns a bool
+    :param exception: optional. User provided exception to raise when check fails.
+
+    :raises ValidationError: parsed or build value is not among valids. Can be overriden by `exception`
 
     Example::
 
@@ -5680,12 +5697,12 @@ class ExprValidator(Validator):
         ValidationError: object failed validation: 88
 
     """
-    def __init__(self, subcon, validator):
-        super(ExprValidator, self).__init__(subcon)
+    def __init__(self, subcon, validator, exception=None):
+        super(ExprValidator, self).__init__(subcon, exception=exception)
         self._validate = lambda obj,ctx,path: validator(obj,ctx)
 
 
-def OneOf(subcon, valids):
+def OneOf(subcon, valids, exception=None):
     r"""
     Validates that the object is one of the listed values, both during parsing and building.
 
@@ -5693,8 +5710,9 @@ def OneOf(subcon, valids):
 
     :param subcon: Construct instance, subcon to validate
     :param valids: collection implementing __contains__, usually a list or set
+    :param exception: optional. User provided exception to raise when check fails.
 
-    :raises ValidationError: parsed or build value is not among valids
+    :raises ValidationError: parsed or build value is not among valids. Can be overriden by `exception`
 
     Example::
 
@@ -5704,10 +5722,10 @@ def OneOf(subcon, valids):
         >>> d.parse(b"\xff")
         construct.core.ValidationError: object failed validation: 255
     """
-    return ExprValidator(subcon, lambda obj,ctx: obj in valids)
+    return ExprValidator(subcon, lambda obj,ctx: obj in valids, exception=exception)
 
 
-def NoneOf(subcon, invalids):
+def NoneOf(subcon, invalids, exception=None):
     r"""
     Validates that the object is none of the listed values, both during parsing and building.
 
@@ -5715,11 +5733,12 @@ def NoneOf(subcon, invalids):
 
     :param subcon: Construct instance, subcon to validate
     :param invalids: collection implementing __contains__, usually a list or set
+    :param exception: optional. User provided exception to raise when check fails.
 
-    :raises ValidationError: parsed or build value is among invalids
+    :raises ValidationError: parsed or build value is among invalids. Can be overriden by `exception`
 
     """
-    return ExprValidator(subcon, lambda obj,ctx: obj not in invalids)
+    return ExprValidator(subcon, lambda obj,ctx: obj not in invalids, exception=exception)
 
 
 def Filter(predicate, subcon):

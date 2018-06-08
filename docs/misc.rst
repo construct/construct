@@ -57,6 +57,7 @@ b'\xff\x00\x00\x00'
 
 The shortcoming is that it only works if the amount and exact bytes are known in advance. To check if a "variable" data meets some criterium (not mere equality), you would need the :class:`~construct.core.Check` class. There is also :class:`~construct.core.OneOf` and :class:`~construct.core.NoneOf` class.
 
+Const also accepts an `exception` keyword argument to override `ConstError`.
 
 Computed
 --------
@@ -160,6 +161,7 @@ FormatFieldError: packer '>B' error during building, given value 9090
 >>> st.build(dict(count=9090, items=[]))
 ValidationError: check failed during building
 
+Check also accepts an `exception` keyword argument to override `ValidationError`.
 
 Error
 ------

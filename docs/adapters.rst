@@ -117,3 +117,5 @@ For example, if 7 out of 8 bits are not allowed to be set (like a flag boolean):
     b'\x01'
     >>> d.build(88)
     ValidationError: object failed validation: 88
+
+ExprValidator also accepts an `exception` keyword argument to override `ValidationError`.

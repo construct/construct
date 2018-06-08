@@ -479,6 +479,9 @@ def test_const():
     assert raises(Const(b"MZ").parse, b"???") == ConstError
     assert raises(Const(b"MZ").build, b"???") == ConstError
     assert raises(Const(255, Int32ul).parse, b"\x00\x00\x00\x00") == ConstError
+    class CustomError(Exception):
+        pass
+    assert raises(Const(255, Int32ul, exception=CustomError).parse, b"\x00\x00\x00\x00") == CustomError
     assert Struct(Const(b"MZ")).build({}) == b"MZ"
     # non-prefixed string literals are unicode on Python 3
     assert raises(lambda: Const(u"no prefix string")) == StringError
@@ -574,6 +577,9 @@ def test_check():
     assert raises(Check(False).parse, b"") == CheckError
     assert raises(Check(this.x == 255).parse, b"", x=0) == CheckError
     assert raises(Check(len_(this.a) == 3).parse, b"", a=[]) == CheckError
+    class CustomError(Exception):
+        pass
+    assert raises(Check(len_(this.a) == 3, exception=CustomError).parse, b"", a=[]) == CustomError
 
 def test_error():
     assert raises(Error.parse, b"") == ExplicitError
@@ -1165,18 +1171,21 @@ def test_processrotateleft():
     common(d, b'\x0f\xf0', b'\xff\x00')
 
 def test_checksum():
+    class CustomError(Exception):
+        pass
     d = Struct(
         "fields" / RawCopy(Struct(
             "a" / Byte,
             "b" / Byte,
         )),
-        "checksum" / Checksum(Bytes(64), lambda data: hashlib.sha512(data).digest(), this.fields.data),
+        "checksum" / Checksum(Bytes(64), lambda data: hashlib.sha512(data).digest(), this.fields.data, exception=CustomError),
     )
 
     c = hashlib.sha512(b"\x01\x02").digest()
     assert d.parse(b"\x01\x02"+c) == Container(fields=dict(data=b"\x01\x02", value=Container(a=1)(b=2), offset1=0, offset2=2, length=2))(checksum=c)
     assert d.build(dict(fields=dict(data=b"\x01\x02"))) == b"\x01\x02"+c
     assert d.build(dict(fields=dict(value=dict(a=1,b=2)))) == b"\x01\x02"+c
+    assert raises(d.parse, b"\x01\x02" + b"\x00" * 64) == CustomError
 
 def test_checksum_nonbytes_issue_323():
     st = Struct(
@@ -1387,11 +1396,17 @@ def test_oneof():
     assert OneOf(Byte,[4,5,6,7]).parse(b"\x05") == 5
     assert OneOf(Byte,[4,5,6,7]).build(5) == b"\x05"
     assert raises(OneOf(Byte,[4,5,6,7]).parse, b"\x08") == ValidationError
+    class CustomError(Exception):
+        pass
+    assert raises(OneOf(Byte,[4,5,6,7], exception=CustomError).parse, b"\x08") == CustomError
     assert raises(OneOf(Byte,[4,5,6,7]).build, 8) == ValidationError
 
 def test_noneof():
     assert NoneOf(Byte,[4,5,6,7]).parse(b"\x08") == 8
     assert raises(NoneOf(Byte,[4,5,6,7]).parse, b"\x06") == ValidationError
+    class CustomError(Exception):
+        pass
+    assert raises(NoneOf(Byte,[4,5,6,7], exception=CustomError).parse, b"\x06") == CustomError
 
 def test_filter():
     d = Filter(obj_ != 0, GreedyRange(Byte))
