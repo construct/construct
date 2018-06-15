@@ -5,11 +5,13 @@ PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 PYPY = '__pypy__' in sys.builtin_module_names
 
-try:
-    import numpy
-    supportsnumpy = True
-except ImportError:
-    supportsnumpy = False
+@property
+def supportsnumpy():
+    try:
+        import numpy
+        return True
+    except ImportError:
+        return False
 try:
     import ruamel.yaml
     assert PY3
