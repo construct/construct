@@ -1017,8 +1017,8 @@ class FormatField(Construct):
     def __init__(self, endianity, format):
         if endianity not in list("=<>"):
             raise FormatFieldError("endianity must be like: = < >", endianity)
-        if format not in list("fdBHLQbhlq"):
-            raise FormatFieldError("format must be like: f d B H L Q b h l q", format)
+        if format not in list("fdBHLQbhlqe"):
+            raise FormatFieldError("format must be like: f d B H L Q b h l q e", format)
         super(FormatField, self).__init__()
         self.fmtstr = endianity+format
         self.length = struct.calcsize(endianity+format)
@@ -1351,6 +1351,19 @@ Int   = Int32ub
 Long  = Int64ub
 
 @singleton
+def Float16b():
+    """Big endian, 16-bit IEEE 754 floating point number"""
+    return FormatField(">", "e")
+@singleton
+def Float16l():
+    """Little endian, 16-bit IEEE 754 floating point number"""
+    return FormatField("<", "e")
+@singleton
+def Float16n():
+    """Native endianity, 16-bit IEEE 754 loating point number"""
+    return FormatField("=", "e")
+
+@singleton
 def Float32b():
     """Big endian, 32-bit IEEE floating point number"""
     return FormatField(">", "f")
@@ -1376,6 +1389,7 @@ def Float64n():
     """Native endianity, 64-bit IEEE floating point number"""
     return FormatField("=", "d")
 
+Semi = Float16b
 Single = Float32b
 Double = Float64b
 
