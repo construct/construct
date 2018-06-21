@@ -1360,7 +1360,7 @@ def Float16l():
     return FormatField("<", "e")
 @singleton
 def Float16n():
-    """Native endianity, 16-bit IEEE 754 loating point number"""
+    """Native endianity, 16-bit IEEE 754 floating point number"""
     return FormatField("=", "e")
 
 @singleton
