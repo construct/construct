@@ -1389,7 +1389,7 @@ def Float64n():
     """Native endianity, 64-bit IEEE floating point number"""
     return FormatField("=", "d")
 
-Semi = Float16b
+Half = Float16b
 Single = Float32b
 Double = Float64b
 
