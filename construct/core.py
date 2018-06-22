@@ -1017,8 +1017,12 @@ class FormatField(Construct):
     def __init__(self, endianity, format):
         if endianity not in list("=<>"):
             raise FormatFieldError("endianity must be like: = < >", endianity)
-        if format not in list("fdBHLQbhlqe"):
-            raise FormatFieldError("format must be like: f d B H L Q b h l q e", format)
+        supported_formats = "fdBHLQbhlq"
+        if supportshalffloats:
+            supported_formats += "e"
+
+        if format not in list(supported_formats):
+            raise FormatFieldError("format must be like:" + ''.join(' ' + c for c in supported_formats), format)
         super(FormatField, self).__init__()
         self.fmtstr = endianity+format
         self.length = struct.calcsize(endianity+format)
@@ -1350,18 +1354,19 @@ Short = Int16ub
 Int   = Int32ub
 Long  = Int64ub
 
-@singleton
-def Float16b():
-    """Big endian, 16-bit IEEE 754 floating point number"""
-    return FormatField(">", "e")
-@singleton
-def Float16l():
-    """Little endian, 16-bit IEEE 754 floating point number"""
-    return FormatField("<", "e")
-@singleton
-def Float16n():
-    """Native endianity, 16-bit IEEE 754 floating point number"""
-    return FormatField("=", "e")
+if supportshalffloats:
+    @singleton
+    def Float16b():
+        """Big endian, 16-bit IEEE 754 floating point number"""
+        return FormatField(">", "e")
+    @singleton
+    def Float16l():
+        """Little endian, 16-bit IEEE 754 floating point number"""
+        return FormatField("<", "e")
+    @singleton
+    def Float16n():
+        """Native endianity, 16-bit IEEE 754 floating point number"""
+        return FormatField("=", "e")
 
 @singleton
 def Float32b():
@@ -1389,7 +1394,8 @@ def Float64n():
     """Native endianity, 64-bit IEEE floating point number"""
     return FormatField("=", "d")
 
-Half = Float16b
+if supportshalffloats:
+    Half = Float16b
 Single = Float32b
 Double = Float64b
 

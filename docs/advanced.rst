@@ -6,7 +6,7 @@ The Basics, part 2
 Integers and floats
 ===================
 
-Basic computer science 101. All integers follow the Int{8,16,24,32,64}{u,s}{b,l,n} and floats follow the Float{16,32,64}{b,l} naming patterns. Endianness can be either big-endian, little-endian or native. Integers can be signed or unsigned (non-negative only). Floats do not have a unsigned type.
+Basic computer science 101. All integers follow the Int{8,16,24,32,64}{u,s}{b,l,n} and floats follow the Float{16,32,64}{b,l} naming patterns. Endianness can be either big-endian, little-endian or native. Integers can be signed or unsigned (non-negative only). Floats do not have a unsigned type. Note that Float16{b,l} are compatible only with Python 3.6 and above.
 
 >>> Int64sl.build(500)
 b'\xf4\x01\x00\x00\x00\x00\x00\x00'
@@ -21,7 +21,7 @@ Few fields have aliases, Byte among integers and Single among floats.
     Short   <-->  Int16ub
     Int     <-->  Int32ub
     Long    <-->  Int64ub
-    Half    <-->  Float16b
+    Half    <-->  Float16b (Python 3.6 and above only)
     Single  <-->  Float32b
     Double  <-->  Float64b
 
@@ -41,7 +41,6 @@ Some numerical classes are implemented using `struct` module, others use BytesIn
 b'\x01\x00\x00\x00'
 >>> BytesInteger(4, swapped=True).build(1)
 b'\x01\x00\x00\x00'
-
 
 
 Bytes and bits

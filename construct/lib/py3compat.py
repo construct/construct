@@ -28,6 +28,7 @@ except ImportError:
     supportsintflag = False
 
 supportskwordered = PY >= (3,6) or PYPY
+supportshalffloats = PY >= (3,6)
 
 
 if PY3:

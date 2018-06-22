@@ -46,6 +46,7 @@ __all__ = [
     'str2bytes',
     'str2unicode',
     'stringtypes',
+    'supportshalffloats',
     'supportsintenum',
     'supportsintflag',
     'supportsksyexport',

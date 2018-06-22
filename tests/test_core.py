@@ -81,9 +81,12 @@ def test_ints24():
     common(Int24sb, b"\xff\xff\xff", -1, 3)
     common(Int24sl, b"\xff\xff\xff", -1, 3)
 
-def test_floats():
+@xfail(not supportshalffloats, reason="Half-precision floats were introduced in 3.6")
+def test_halffloats():
     common(Half, b"\x00\x00", 0., 2)
     common(Half, b"\x35\x55", 0.333251953125, 2)
+
+def test_floats():
     common(Single, b"\x00\x00\x00\x00", 0., 4)
     common(Single, b"?\x99\x99\x9a", 1.2000000476837158, 4)
     common(Double, b"\x00\x00\x00\x00\x00\x00\x00\x00", 0., 8)
