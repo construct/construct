@@ -95,6 +95,7 @@ __all__ = [
     'GreedyBytes',
     'GreedyRange',
     'GreedyString',
+    'Half',
     'Hex',
     'HexDump',
     'If',
@@ -206,9 +207,4 @@ __all__ = [
     'version_string',
 ]
 __all__ += ["Int%s%s%s" % (n,us,bln) for n in (8,16,24,32,64) for us in "us" for bln in "bln"]
-__all__ += ["Float%s%s" % (n,bln) for n in (32,64) for bln in "bln"]
-
-if lib.supportshalffloats:
-    __all__ += ["Float16%s" % (bln) for bln in "bln"]
-    __all__ += ['Half']
-
+__all__ += ["Float%s%s" % (n,bln) for n in (16,32,64) for bln in "bln"]

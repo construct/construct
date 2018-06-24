@@ -1017,16 +1017,15 @@ class FormatField(Construct):
     def __init__(self, endianity, format):
         if endianity not in list("=<>"):
             raise FormatFieldError("endianity must be like: = < >", endianity)
-        supported_formats = "fdBHLQbhlq"
-        if supportshalffloats:
-            supported_formats += "e"
 
-        if format not in list(supported_formats):
-            raise FormatFieldError("format must be like:" + ''.join(' ' + c for c in supported_formats), format)
+        if format not in list("fdBHLQbhlqe"):
+            raise FormatFieldError("format must be like: f d B H L Q b h l q e", format)
+
         super(FormatField, self).__init__()
         self.fmtstr = endianity+format
-        self.length = struct.calcsize(endianity+format)
-        self.packer = struct.Struct(endianity+format)
+        if format != 'e' or supportshalffloats:
+            self.length = struct.calcsize(endianity+format)
+            self.packer = struct.Struct(endianity+format)
 
     def _parse(self, stream, context, path):
         data = stream_read(stream, self.length)
@@ -1354,19 +1353,18 @@ Short = Int16ub
 Int   = Int32ub
 Long  = Int64ub
 
-if supportshalffloats:
-    @singleton
-    def Float16b():
-        """Big endian, 16-bit IEEE 754 floating point number"""
-        return FormatField(">", "e")
-    @singleton
-    def Float16l():
-        """Little endian, 16-bit IEEE 754 floating point number"""
-        return FormatField("<", "e")
-    @singleton
-    def Float16n():
-        """Native endianity, 16-bit IEEE 754 floating point number"""
-        return FormatField("=", "e")
+@singleton
+def Float16b():
+    """Big endian, 16-bit IEEE 754 floating point number"""
+    return FormatField(">", "e")
+@singleton
+def Float16l():
+    """Little endian, 16-bit IEEE 754 floating point number"""
+    return FormatField("<", "e")
+@singleton
+def Float16n():
+    """Native endianity, 16-bit IEEE 754 floating point number"""
+    return FormatField("=", "e")
 
 @singleton
 def Float32b():
@@ -1394,8 +1392,7 @@ def Float64n():
     """Native endianity, 64-bit IEEE floating point number"""
     return FormatField("=", "d")
 
-if supportshalffloats:
-    Half = Float16b
+Half = Float16b
 Single = Float32b
 Double = Float64b
 
