@@ -2075,3 +2075,13 @@ def test_hex_issue_709():
     d = Struct("x" / Struct("y" / Hex(Bytes(1))))
     obj = d.parse(b"\xff")
     assert "y = unhexlify('ff')" in str(obj)
+
+def test_select_decode_error():
+    d = Select(
+        PaddedString(1, "ascii"),
+        Bytes(1),
+    )
+    obj = d.parse(b"a")
+    assert obj == u"a"
+    obj = d.parse(b"\xc7")
+    assert obj == b"\xc7"
