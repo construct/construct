@@ -16,7 +16,7 @@ python:
 
 install:
     - pip install pytest pytest-benchmark
-    - pip install enum34 numpy arrow ruamel.yaml
+    - pip install enum34 numpy arrow "ruamel.yaml<=0.15.40"
 
 before_script:
     - "export PYTHONPATH=$PYTHONPATH:`pwd`"
