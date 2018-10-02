@@ -25,8 +25,6 @@ setup(
             "ruamel.yaml",
         ],
     },
-    requires = [],
-    provides = ["construct"],
     keywords = [
         "construct",
         "kaitai",
