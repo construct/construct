@@ -82,3 +82,7 @@ The library is downloadable and installable from Pypi. Just use standard command
 
 * pip install construct
 * pip install construct[extras]
+
+For Anaconda users, the library is also available from `conda-forge <https://conda-forge.org/>`_. To install, use
+
+* conda install -c conda-forge construct
