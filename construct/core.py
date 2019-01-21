@@ -1189,8 +1189,6 @@ class BitsInteger(Construct):
             raise IntegerError("length must be non-negative")
         data = stream_read(stream, length)
         if self.swapped:
-            if length & 7:
-                raise IntegerError("little-endianness is only defined for multiples of 8 bits")
             data = swapbytes(data)
         return bits2integer(data, self.signed)
 
@@ -1206,8 +1204,6 @@ class BitsInteger(Construct):
             raise IntegerError("length must be non-negative")
         data = integer2bits(obj, length)
         if self.swapped:
-            if length & 7:
-                raise IntegerError("little-endianness is only defined for multiples of 8 bits")
             data = swapbytes(data)
         stream_write(stream, data, length)
         return obj
