@@ -2075,3 +2075,28 @@ def test_hex_issue_709():
     d = Struct("x" / Struct("y" / Hex(Bytes(1))))
     obj = d.parse(b"\xff")
     assert "y = unhexlify('ff')" in str(obj)
+
+def test_select_decode_error():
+    d = Select(
+        PaddedString(1, "ascii"),
+        Bytes(1),
+    )
+    obj = d.parse(b"a")
+    assert obj == u"a"
+    obj = d.parse(b"\xc7")
+    assert obj == b"\xc7"
+
+@xfail(not supportsintenum, raises=AttributeError, reason="IntEnum introduced in 3.4")
+def test_select_enum_error():
+    import enum
+    class Color(enum.IntEnum):
+        RED = 65
+    def EnumAdapter(subcon, cls):
+       return ExprAdapter(subcon, lambda obj, ctx: cls(obj), lambda obj, ctx: obj.value)
+    d = Select(EnumAdapter(Int8ub, Color), Int8ub)
+    obj = d.parse(b"A")
+    assert obj == Color.RED
+    obj = d.parse(b"B")
+    assert obj == 66
+    # But this should still fail
+    assert raises(Select(EnumAdapter(Int8ub, Color)).parse, b"B") == SelectError

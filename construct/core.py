@@ -1551,7 +1551,7 @@ def PascalString(lengthfield, encoding):
     macro = StringEncoded(Prefixed(lengthfield, GreedyBytes), encoding)
     def _emitseq(ksy, bitwise):
         return [
-            dict(id="lengthfield", type=lengthfield._compileprimitivetype(ksy, bitwise)), 
+            dict(id="lengthfield", type=lengthfield._compileprimitivetype(ksy, bitwise)),
             dict(id="data", size="lengthfield", type="str", encoding=encoding),
         ]
     macro._emitseq = _emitseq
@@ -3301,7 +3301,7 @@ class Union(Construct):
 
     Example::
 
-        >>> d = Union(0, 
+        >>> d = Union(0,
         ...     "raw" / Bytes(8),
         ...     "ints" / Int32ub[2],
         ...     "shorts" / Int16ub[4],
@@ -3480,7 +3480,7 @@ class Select(Construct):
                 obj = sc._parsereport(stream, context, path)
             except ExplicitError:
                 raise
-            except ConstructError:
+            except Exception:
                 stream_seek(stream, fallback)
             else:
                 return obj
@@ -4487,7 +4487,7 @@ class Prefixed(Subconstruct):
 
     def _emitseq(self, ksy, bitwise):
         return [
-            dict(id="lengthfield", type=self.lengthfield._compileprimitivetype(ksy, bitwise)), 
+            dict(id="lengthfield", type=self.lengthfield._compileprimitivetype(ksy, bitwise)),
             dict(id="data", size="lengthfield", type=self.subcon._compileprimitivetype(ksy, bitwise)),
         ]
 
@@ -4529,7 +4529,7 @@ def PrefixedArray(countfield, subcon):
     macro._actualsize = _actualsize
     def _emitseq(ksy, bitwise):
         return [
-            dict(id="countfield", type=countfield._compileprimitivetype(ksy, bitwise)), 
+            dict(id="countfield", type=countfield._compileprimitivetype(ksy, bitwise)),
             dict(id="data", type=subcon._compileprimitivetype(ksy, bitwise), repeat="expr", repeat_expr="countfield"),
         ]
     macro._emitseq = _emitseq
