@@ -2092,7 +2092,7 @@ def test_select_enum_error():
     class Color(enum.IntEnum):
         RED = 65
     def EnumAdapter(subcon, cls):
-       return ExprAdapter(subcon, lambda obj, ctx: cls(obj), lambda obj, ctx: obj.value)
+        return ExprAdapter(subcon, lambda obj, ctx: cls(obj), lambda obj, ctx: obj.value)
     d = Select(EnumAdapter(Int8ub, Color), Int8ub)
     obj = d.parse(b"A")
     assert obj == Color.RED
