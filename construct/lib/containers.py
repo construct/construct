@@ -131,6 +131,7 @@ class Container(dict):
             dict.__delitem__(self, key)
 
     def __init__(self, *args, **entrieskw):
+        super(Container, self).__init__()
         self.__keys_order__ = []
         for arg in args:
             if isinstance(arg, dict):
