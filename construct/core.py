@@ -79,27 +79,34 @@ class CancelParsing(ConstructError):
 class Context(Container):
     """Special type of Container used to store contextual information during processing."""
 
-    def __init__(self, _parsing=False, _building=False, _sizing=False, _io=None, _index=None, _subcons=None, **kwargs):
+    def __init__(self, _parsing=False, _building=False, _sizing=False, _io=None, _index=0, _subcons=None, **kwargs):
         super(Context, self).__init__(
-            _=None,
-            _root=None,
-            _params=self,
-            _parsing=_parsing,
-            _building=_building,
-            _sizing=_sizing,
-            _io=_io,
-            _index=_index,
-            _subcons=_subcons or [],
+            _=None,                   # Parent context.
+            _root=None,               # Root context.
+            _params=self,             # Global parameters.
+            # TODO: Perhaps have a "state" attribute instead to avoid contradictions due to multiple flags being true.
+            _parsing=_parsing,        # Processing parsing()?
+            _building=_building,      # Processing building()?
+            _sizing=_sizing,          # Processing sizeof()?
+            _io=_io,                  # Processing stream.
+            _index=_index,            # Current index (for Array)
+            _subcons=_subcons or [],  # Current subcons
         )
         # Recursively build internal dictionaries as child contexts.
         for key, value in kwargs.items():
-            if isinstance(value, dict) and value is not self:
+            if isinstance(value, dict) and value is not self and not isinstance(value, Context):
                 value = self.from_parent(self, **value)
             self[key] = value
 
     @classmethod
     def from_parent(cls, parent, _io=None, _subcons=None, **kwargs):
         """Factory method for initializing a child Context from the given parent."""
+        # Don't allow children to change the processing status or index
+        kwargs.pop('_parsing', None)
+        kwargs.pop('_building', None)
+        kwargs.pop('_sizing', None)
+        kwargs.pop('_index', None)
+
         context = cls(
             _parsing=parent._parsing,
             _building=parent._building,
@@ -111,7 +118,8 @@ class Context(Container):
         )
         context._ = parent
         context._params = parent._params
-        context._root = parent._root
+        # First child is root, since the very first parent context holds the user defined external parameters.
+        context._root = parent._root or context
         return context
 
     def get_child(self, name, default=None):
@@ -339,6 +347,9 @@ class Construct(object):
         r"""
         Parse a stream. Files, pipes, sockets, and other streaming sources of data are handled by this method. See parse().
         """
+        contextkw.pop('_parsing', None)
+        contextkw.pop('_building', None)
+        contextkw.pop('_sizing', None)
         context = Context(_parsing=True, **contextkw)
         try:
             return self._parsereport(stream, context, "(parsing)")
@@ -384,6 +395,9 @@ class Construct(object):
         r"""
         Build an object directly into a stream. See build().
         """
+        contextkw.pop('_parsing', None)
+        contextkw.pop('_building', None)
+        contextkw.pop('_sizing', None)
         context = Context(_building=True, **contextkw)
         self._build(obj, stream, context, "(building)")
 
@@ -414,6 +428,9 @@ class Construct(object):
 
         :raises SizeofError: size could not be determined in actual context, or is impossible to be determined
         """
+        contextkw.pop('_parsing', None)
+        contextkw.pop('_building', None)
+        contextkw.pop('_sizing', None)
         context = Context(_sizing=True, **contextkw)
         return self._sizeof(context, "(sizeof)")
 

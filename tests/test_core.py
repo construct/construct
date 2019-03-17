@@ -1638,8 +1638,8 @@ def test_from_issue_357():
     assert st1.build(dict(a={})) == b""
     assert st2.build(dict(b={})) == b""
 
-def test_context_is_container():
-    d = Struct(Check(lambda ctx: type(ctx) is Container))
+def test_context_is_context():
+    d = Struct(Check(lambda ctx: type(ctx) is Context))
     d.parse(b"")
 
 def test_from_issue_362():
