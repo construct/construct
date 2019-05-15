@@ -87,7 +87,7 @@ Container(count=4, data=b'1234')
 Refering to inlined constructs
 ============================
 
-If you need to refer to a subcon like Enum, that was inlined in the struct (and therefore wasnt assigned to any variable in the namespace), you can access it as Struct attribute under same name. This feature is particularly handy when using Enums and EnumFlags.
+If you need to refer to a subcon like Enum, that was inlined in the struct (and therefore wasn't assigned to any variable in the namespace), you can access it as Struct attribute under same name. This feature is particularly handy when using Enums and EnumFlags.
 
 >>> d = Struct(
 ...     "animal" / Enum(Byte, giraffe=1),
