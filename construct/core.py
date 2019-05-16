@@ -757,7 +757,7 @@ class Validator(SymmetricAdapter):
 
 class Tunnel(Subconstruct):
     r"""
-    Abstract class that allows other constructs to read part of the stream as if they were reading the entrie stream. See Prefixed for example.
+    Abstract class that allows other constructs to read part of the stream as if they were reading the entire stream. See Prefixed for example.
 
     Needs to implement `_decode()` for parsing and `_encode()` for building.
     """
