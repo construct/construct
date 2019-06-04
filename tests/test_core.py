@@ -304,6 +304,17 @@ def test_enum_issue_677():
     d = Struct("e" / Enum(Byte, one=1)).compile()
     assert str(d.parse(b"\x01")) == 'Container: \n    e = (enum) one 1'
     assert str(d.parse(b"\xff")) == 'Container: \n    e = (enum) (unknown) 255'
+    
+def test_enum_prop_getters():
+    MyEnum = Enum(
+        BitsInteger(1),
+        foo=0,
+        bar=1
+    )
+    assert MyEnum.foo.value == 0
+    assert MyEnum.bar.value == 1
+    assert MyEnum.foo.name == 'foo'
+    assert MyEnum.bar.name == 'bar'
 
 def test_flagsenum():
     d = FlagsEnum(Byte, one=1, two=2, four=4, eight=8)
