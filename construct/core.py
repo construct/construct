@@ -1679,6 +1679,14 @@ class EnumIntegerString(str):
         ret = EnumIntegerString(stringvalue)
         ret.intvalue = intvalue
         return ret
+    
+    @property
+    def value(self):
+        return self.intvalue
+
+    @property
+    def name(self):
+        return str(self)
 
 
 class Enum(Adapter):
