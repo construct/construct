@@ -1,6 +1,13 @@
 Construct 2.9
 ===================
 
+|build-status|
+
+.. |build-status| image:: https://github.com/construct/construct/workflows/build/badge.svg
+   :alt: build status
+   :scale: 100%
+   :target: https://github.com/construct/construct/actions
+
 Construct is a powerful **declarative** and **symmetrical** parser and builder for binary data.
 
 Instead of writing *imperative code* to parse a piece of data, you declaratively define a *data structure* that describes your data. As this data structure is not code, you can use it in one direction to *parse* data into Pythonic objects, and in the other direction, to *build* objects into binary data.
