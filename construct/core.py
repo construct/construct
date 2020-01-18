@@ -367,7 +367,7 @@ class Construct(object):
         r"""
         Build an object into a closed binary file. See build().
         """
-        with open(filename, 'wb') as f:
+        with io.open(filename, 'wb') as f:
             self.build_stream(obj, f, **contextkw)
 
     def _build(self, obj, stream, context, path):

@@ -2129,3 +2129,6 @@ def test_hex_issue_709():
     d = Struct("x" / Struct("y" / Hex(Bytes(1))))
     obj = d.parse(b"\xff")
     assert "y = unhexlify('ff')" in str(obj)
+
+def test_buildfile_issue_737():
+    Byte.build_file(Byte.parse(b'\xff'), 'out')
