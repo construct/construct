@@ -1015,6 +1015,7 @@ class FormatField(Construct):
         self.fmtstr = endianity+format
         self.length = struct.calcsize(endianity+format)
         self.packer = struct.Struct(endianity+format)
+        self.endianity = 'little' if endianity == '<' or endianity == '=' and sys.byteorder == 'little' else 'big'
 
     def _parse(self, stream, context, path):
         data = stream_read(stream, self.length, path)
