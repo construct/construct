@@ -82,20 +82,12 @@ class Container(dict):
             text = u'utf8 decoded string...' (total 22)
             value = 123
     """
-    __slots__ = ["__keys_order__", "__recursion_lock__"]
+    __slots__ = ["__recursion_lock__"]
 
     def __getattr__(self, name):
         try:
             if name in self.__slots__:
-                try:
-                    return object.__getattribute__(self, name)
-                except AttributeError as e:
-                    if name == "__keys_order__":
-                        r = []
-                        object.__setattr__(self, "__keys_order__", r)
-                        return r
-                    else:
-                        raise e
+                return object.__getattribute__(self, name)
             else:
                 return self[name]
         except KeyError:
@@ -119,62 +111,11 @@ class Container(dict):
         except KeyError:
             raise AttributeError(name)
 
-    def __setitem__(self, key, value):
-        if key not in self:
-            self.__keys_order__.append(key)
-        dict.__setitem__(self, key, value)
-
-    def __delitem__(self, key):
-        """Removes an item from the Container in linear time O(n)."""
-        if key in self:
-            self.__keys_order__.remove(key)
-            dict.__delitem__(self, key)
-
-    def __init__(self, *args, **entrieskw):
-        self.__keys_order__ = []
-        for arg in args:
-            if isinstance(arg, dict):
-                for k,v in arg.items():
-                    self[k] = v
-            else:
-                for k,v in arg:
-                    self[k] = v
-        for k,v in entrieskw.items():
-            self[k] = v
-
     def __call__(self, **entrieskw):
         """Chains adding new entries to the same container. See ctor."""
         for k,v in entrieskw.items():
             self[k] = v
         return self
-
-    def keys(self):
-        return iter(self.__keys_order__)
-
-    def values(self):
-        return (self[k] for k in self.__keys_order__)
-
-    def items(self):
-        return ((k, self[k]) for k in self.__keys_order__)
-
-    __iter__ = keys
-
-    def clear(self):
-        """Removes all items."""
-        dict.clear(self)
-        self.__keys_order__ = []
-
-    def pop(self, key):
-        """Removes and returns the value for a given key, raises KeyError if not found."""
-        val = dict.pop(self, key)
-        self.__keys_order__.remove(key)
-        return val
-
-    def popitem(self):
-        """Removes and returns the last key and value from order."""
-        k = self.__keys_order__.pop()
-        v = dict.pop(self, k)
-        return k, v
 
     def update(self, seqordict):
         """Appends items from another dict/Container or list-of-tuples."""
@@ -182,12 +123,6 @@ class Container(dict):
             seqordict = seqordict.items()
         for k,v in seqordict:
             self[k] = v
-
-    def __getstate__(self):
-        return self.__keys_order__
-
-    def __setstate__(self, state):
-        self.__keys_order__ = state
 
     def copy(self):
         return Container(self)

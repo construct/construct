@@ -101,7 +101,7 @@ def test_popitem():
     assert c.popitem() == ("c",3)
     assert c.popitem() == ("b",2)
     assert c.popitem() == ("a",1)
-    assert raises(c.popitem) == IndexError
+    assert raises(c.popitem) == KeyError
 
 def test_update_dict():
     c = Container(a=1)(b=2)(c=3)(d=4)
