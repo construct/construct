@@ -40,24 +40,6 @@ def commonhex(format, hexdata):
     commonbytes(format, binascii.unhexlify(hexdata))
 
 
-def commondumpdeprecated(format, filename):
-    filename = "tests/deprecated_gallery/blobs/" + filename
-    if ontravis:
-        filename = "../" + filename
-    with open(filename,'rb') as f:
-        data = f.read()
-    commonbytes(format, data)
-
-
-def commondump(format, filename):
-    filename = "tests/gallery/blobs/" + filename
-    if ontravis:
-        filename = "../" + filename
-    with open(filename,'rb') as f:
-        data = f.read()
-    commonbytes(format, data)
-
-
 def commonbytes(format, data):
     obj = format.parse(data)
     data2 = format.build(obj)
