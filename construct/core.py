@@ -2071,8 +2071,7 @@ class Struct(Construct):
         block = """
             def %s(io, this):
                 result = Container()
-                this = Container(_ = this, _params = this['_params'], _root = None, _parsing = True, _building = False, _sizing = False, _subcons = None, _io = io, _index = this.get('_index', None))
-                this['_root'] = this['_'].get('_root', this)
+                this = this.create_child(_io=io)
                 try:
         """ % (fname, )
         for sc in self.subcons:
@@ -2194,8 +2193,7 @@ class Sequence(Construct):
         block = """
             def %s(io, this):
                 result = ListContainer()
-                this = Container(_ = this, _params = this['_params'], _root = None, _parsing = True, _building = False, _sizing = False, _subcons = None, _io = io, _index = this.get('_index', None))
-                this['_root'] = this['_'].get('_root', this)
+                this = this.create_child(_io=io)
                 try:
         """ % (fname,)
         for sc in self.subcons:
@@ -2943,8 +2941,7 @@ class FocusedSeq(Construct):
         block = """
             def %s(io, this):
                 result = []
-                this = Container(_ = this, _params = this['_params'], _root = None, _parsing = True, _building = False, _sizing = False, _subcons = None, _io = io, _index = this.get('_index', None))
-                this['_root'] = this['_'].get('_root', this)
+                this = this.create_child(_io=io)
         """ % (fname, )
         for sc in self.subcons:
             block += """
@@ -3399,8 +3396,7 @@ class Union(Construct):
         fname = "parse_union_%s" % code.allocateId()
         block = """
             def %s(io, this):
-                this = Container(_ = this, _params = this['_params'], _root = None, _parsing = True, _building = False, _sizing = False, _subcons = None, _io = io, _index = this.get('_index', None))
-                this['_root'] = this['_'].get('_root', this)
+                this = this.create_child(_io=io)
                 fallback = io.tell()
         """ % (fname, )
         if isinstance(self.parsefrom, type(None)):
