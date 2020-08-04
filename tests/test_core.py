@@ -2122,7 +2122,6 @@ def test_buildfile_issue_737():
     Byte.build_file(Byte.parse(b'\xff'), 'out')
     assert Byte.parse_file('out') == 255
 
-@xfail(reason="Context is not properly processed, see #771 and PR #784")
 def test_struct_issue_771():
     spec = Struct(
         'a' / Int32ul,
