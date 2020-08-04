@@ -469,7 +469,7 @@ def test_computed():
 
 def test_index():
     d = Array(3, Bytes(this._index+1))
-    common(d, b"abbccc", [b"a", b"bb", b"ccc"])
+    common(d, b"abbccc", [b"a", b"bb", b"ccc"], 6)
     d = GreedyRange(Bytes(this._index+1))
     common(d, b"abbccc", [b"a", b"bb", b"ccc"])
     d = RepeatUntil(lambda o,l,ctx: ctx._index == 2, Bytes(this._index+1))

@@ -2246,7 +2246,11 @@ class Array(Subconstruct):
                 count = count(context)
         except (KeyError, AttributeError):
             raise SizeofError("cannot calculate size, key not found in context", path=path)
-        return count * self.subcon._sizeof(context, path)
+        size = 0
+        for i in range(count):
+            context._index = i
+            size += self.subcon._sizeof(context, path)
+        return size
 
     def _emitparse(self, code):
         return "ListContainer((this.__setitem__('_index',i),(%s))[1] for i in range(%s))" % (self.subcon._compileparse(code), self.count, )
