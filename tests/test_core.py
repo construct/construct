@@ -136,6 +136,9 @@ def test_bytesinteger():
     d = BytesInteger(4, signed=True, swapped=False)
     common(d, b"\x01\x02\x03\x04", 0x01020304, 4)
     common(d, b"\xff\xff\xff\xff", -1, 4)
+    d = BytesInteger(4, signed=False, swapped=this.swapped)
+    common(d, b"\x01\x02\x03\x04", 0x01020304, 4, swapped=False)
+    common(d, b"\x04\x03\x02\x01", 0x01020304, 4, swapped=True)
     assert raises(BytesInteger(this.missing).sizeof) == SizeofError
     assert raises(BytesInteger(4, signed=False).build, -1) == IntegerError
     common(BytesInteger(0), b"", 0, 0)
@@ -147,6 +150,9 @@ def test_bitsinteger():
     common(d, b"\x01\x01\x01\x01\x01\x01\x01\x01", -1, 8)
     d = BitsInteger(16, swapped=True)
     common(d, b"\x00\x00\x00\x00\x00\x00\x00\x00\x01\x01\x01\x01\x01\x01\x01\x01", 0xff00, 16)
+    d = BitsInteger(16, swapped=this.swapped)
+    common(d, b"\x01\x01\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00", 0xff00, 16, swapped=False)
+    common(d, b"\x00\x00\x00\x00\x00\x00\x00\x00\x01\x01\x01\x01\x01\x01\x01\x01", 0xff00, 16, swapped=True)
     assert raises(BitsInteger(this.missing).sizeof) == SizeofError
     assert raises(BitsInteger(8, signed=False).build, -1) == IntegerError
     common(BitsInteger(0), b"", 0, 0)

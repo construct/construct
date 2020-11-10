@@ -1090,13 +1090,11 @@ class BytesInteger(Construct):
         self.swapped = swapped
 
     def _parse(self, stream, context, path):
-        length = self.length
-        if callable(length):
-            length = length(context)
+        length = evaluate(self.length, context)
         if length < 0:
             raise IntegerError("length must be non-negative", path=path)
         data = stream_read(stream, length, path)
-        if self.swapped:
+        if evaluate(self.swapped, context):
             data = data[::-1]
         return bytes2integer(data, self.signed)
 
@@ -1105,28 +1103,26 @@ class BytesInteger(Construct):
             raise IntegerError("value %r is not an integer" % (obj,), path=path)
         if obj < 0 and not self.signed:
             raise IntegerError("value %r is negative, but field is not signed" % (obj,), path=path)
-        length = self.length
-        if callable(length):
-            length = length(context)
+        length = evaluate(self.length, context)
         if length < 0:
             raise IntegerError("length must be non-negative", path=path)
         data = integer2bytes(obj, length)
-        if self.swapped:
+        if evaluate(self.swapped, context):
             data = data[::-1]
         stream_write(stream, data, length, path)
         return obj
 
     def _sizeof(self, context, path):
         try:
-            length = self.length
-            if callable(length):
-                length = length(context)
-            return length
+            return evaluate(self.length, context)
         except (KeyError, AttributeError):
             raise SizeofError("cannot calculate size, key not found in context", path=path)
 
     def _emitparse(self, code):
-        return "bytes2integer(read_bytes(io, %s)%s, %s)" % (self.length, "[::-1]" if self.swapped else "", self.signed)
+        if callable(self.swapped):
+            return "bytes2integer(read_bytes(io, %s)[::-1] if %s else read_bytes(io, %s), %s)" % (self.length, self.swapped, self.length, self.signed, )
+        else:
+            return "bytes2integer(read_bytes(io, %s)%s, %s)" % (self.length, "[::-1]" if self.swapped else "", self.signed, )
 
     def _emitprimitivetype(self, ksy, bitwise):
         if bitwise:
@@ -1134,6 +1130,7 @@ class BytesInteger(Construct):
             assert not self.swapped
             return "b%s" % (8*self.length, )
         else:
+            assert not callable(self.swapped)
             return "%s%s%s" % ("s" if self.signed else "u", self.length, "le" if self.swapped else "be", )
 
 
@@ -1174,13 +1171,11 @@ class BitsInteger(Construct):
         self.swapped = swapped
 
     def _parse(self, stream, context, path):
-        length = self.length
-        if callable(length):
-            length = length(context)
+        length = evaluate(self.length, context)
         if length < 0:
             raise IntegerError("length must be non-negative", path=path)
         data = stream_read(stream, length, path)
-        if self.swapped:
+        if evaluate(self.swapped, context):
             if length & 7:
                 raise IntegerError("little-endianness is only defined for multiples of 8 bits", path=path)
             data = swapbytes(data)
@@ -1191,13 +1186,11 @@ class BitsInteger(Construct):
             raise IntegerError("value %r is not an integer" % (obj,), path=path)
         if obj < 0 and not self.signed:
             raise IntegerError("value %r is negative, but field is not signed" % (obj,), path=path)
-        length = self.length
-        if callable(length):
-            length = length(context)
+        length = evaluate(self.length, context)
         if length < 0:
             raise IntegerError("length must be non-negative", path=path)
         data = integer2bits(obj, length)
-        if self.swapped:
+        if evaluate(self.swapped, context):
             if length & 7:
                 raise IntegerError("little-endianness is only defined for multiples of 8 bits", path=path)
             data = swapbytes(data)
@@ -1206,15 +1199,15 @@ class BitsInteger(Construct):
 
     def _sizeof(self, context, path):
         try:
-            length = self.length
-            if callable(length):
-                length = length(context)
-            return length
+            return evaluate(self.length, context)
         except (KeyError, AttributeError):
             raise SizeofError("cannot calculate size, key not found in context", path=path)
 
     def _emitparse(self, code):
-        return "bits2integer(read_bytes(io, %s)%s, %s)" % (self.length, "[::-1]" if self.swapped else "", self.signed, )
+        if callable(self.swapped):
+            return "bits2integer(read_bytes(io, %s)[::-1] if %s else read_bytes(io, %s), %s)" % (self.length, self.swapped, self.length, self.signed, )
+        else:
+            return "bits2integer(read_bytes(io, %s)%s, %s)" % (self.length, "[::-1]" if self.swapped else "", self.signed, )
 
     def _emitprimitivetype(self, ksy, bitwise):
         assert not self.signed
