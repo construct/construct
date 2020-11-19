@@ -38,6 +38,14 @@ b'\x00\x00\x00\x00\x00\x00\x00\x01'
 >>> d.parse(b"\x01")
 b'\x01\x00\x00\x00\x00\x00\x00\x00'
 
+In case that endianness is determined at parse/build time, you can pass endianness (`swapped` parameter) by the context:
+
+>>> d = BytesInteger(2, swapped=this.swapped)
+>>> d.build(1, swapped=True)
+b'\x01\x00'
+>>> d = BitsInteger(16, swapped=this.swapped)
+>>> d.build(1, swapped=True)
+b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
 Working with bytes subsets
 --------------------------------------------

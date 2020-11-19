@@ -1065,7 +1065,7 @@ class BytesInteger(Construct):
 
     :param length: integer or context lambda, number of bytes in the field
     :param signed: bool, whether the value is signed (two's complement), default is False (unsigned)
-    :param swapped: bool, whether to swap byte order (little endian), default is False (big endian)
+    :param swapped: bool or context lambda, whether to swap byte order (little endian), default is False (big endian)
 
     :raises StreamError: requested reading negative amount, could not read enough bytes, requested writing different amount than actual data, or could not write all bytes
     :raises IntegerError: lenght is negative, given a negative value when field is not signed, or not an integer
@@ -1146,7 +1146,7 @@ class BitsInteger(Construct):
 
     :param length: integer or context lambda, number of bits in the field
     :param signed: bool, whether the value is signed (two's complement), default is False (unsigned)
-    :param swapped: bool, whether to swap byte order (little endian), default is False (big endian)
+    :param swapped: bool or context lambda, whether to swap byte order (little endian), default is False (big endian)
 
     :raises StreamError: requested reading negative amount, could not read enough bytes, requested writing different amount than actual data, or could not write all bytes
     :raises IntegerError: lenght is negative, given a negative value when field is not signed, or not an integer
