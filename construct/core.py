@@ -4244,6 +4244,12 @@ class RawCopy(Subconstruct):
 
     Object is a dictionary with either "data" or "value" keys, or both.
 
+    When building, if both the "value" and data "keys" are present, then the
+    "data" key is used, and the "value" key ignored. This is undesirable in the
+    case that you parse some data for the purpose of modifying it and writing
+    it back; in this case, delete the "data" key when modifying the "value" key
+    to correctly rebuild the former.
+
     :param subcon: Construct instance
 
     :raises StreamError: stream is not seekable and tellable
