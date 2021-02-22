@@ -2007,13 +2007,17 @@ class Struct(Construct):
     def _parse(self, stream, context, path):
         obj = Container()
         obj._io = stream
+        obj._metadata = {}
         context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         for sc in self.subcons:
             try:
+                start = stream_tell(stream, path)
                 subobj = sc._parsereport(stream, context, path)
+                end = stream_tell(stream, path)
                 if sc.name:
                     obj[sc.name] = subobj
+                    obj._metadata[sc.name] = (start, end)
                     context[sc.name] = subobj
             except StopFieldError:
                 break
@@ -2138,12 +2142,16 @@ class Sequence(Construct):
 
     def _parse(self, stream, context, path):
         obj = ListContainer()
+        obj._metadata = []
         context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         for i,sc in enumerate(self.subcons):
             try:
+                start = stream_tell(stream, path)
                 subobj = sc._parsereport(stream, context, path)
+                end = stream_tell(stream, path)
                 obj.append(subobj)
+                obj._metadata.append((start, end))
                 if sc.name:
                     context[sc.name] = subobj
             except StopFieldError:
@@ -2249,11 +2257,15 @@ class Array(Subconstruct):
         if not 0 <= count:
             raise RangeError("invalid count %s" % (count,), path=path)
         obj = ListContainer()
+        obj._metadata = []
         for i in range(count):
             context._index = i
+            start = stream_tell(stream, path)
             e = self.subcon._parsereport(stream, context, path)
+            end = stream_tell(stream, path)
             if not self.discard:
                 obj.append(e)
+                obj._metadata.append((start, end))
         return obj
 
     def _build(self, obj, stream, context, path):
@@ -3049,6 +3061,7 @@ class NamedTuple(Adapter):
     def _decode(self, obj, context, path):
         if isinstance(self.subcon, Struct):
             del obj["_io"]
+            del obj["_metadata"]
             return self.factory(**obj)
         if isinstance(self.subcon, (Sequence,Array,GreedyRange)):
             return self.factory(*obj)

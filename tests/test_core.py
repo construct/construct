@@ -397,6 +397,15 @@ def test_struct_nested():
     d = Struct("a"/Byte, "b"/Int16ub, "inner"/Struct("c"/Byte, "d"/Byte))
     common(d, b"\x01\x00\x02\x03\x04", Container(a=1,b=2,inner=Container(c=3,d=4)), 5)
 
+def test_struct_metadata():
+    d = Struct("a"/Byte, "b"/Int16ub, "inner"/Struct("c"/Byte, "d"/Byte))
+    obj = d.parse(b"\x01\x00\x02\x03\x04")
+    assert obj._metadata["a"] == (0,1)
+    assert obj._metadata["b"] == (1,3)
+    assert obj._metadata["inner"] == (3,5)
+    assert obj.inner._metadata["c"] == (3,4)
+    assert obj.inner._metadata["d"] == (4,5)
+
 def test_struct_kwctor():
     d = Struct(a=Byte, b=Byte, c=Byte, d=Byte)
     common(d, b"\x01\x02\x03\x04", Container(a=1,b=2,c=3,d=4), 4)
@@ -435,6 +444,12 @@ def test_sequence():
     d = Sequence(Computed(7), Const(b"JPEG"), Pass, Terminated)
     assert d.build(None) == d.build([None,None,None,None])
 
+def test_sequence_metadata():
+    d = Sequence(Int8ub, Int16ub)
+    obj = d.parse(b"\x01\x00\x02")
+    assert obj._metadata[0] == (0,1)
+    assert obj._metadata[1] == (1,3)
+
 def test_sequence_nested():
     common(Sequence(Int8ub, Int16ub, Sequence(Int8ub, Int8ub)), b"\x01\x00\x02\x03\x04", [1,2,[3,4]], 5)
 
@@ -458,6 +473,13 @@ def test_array():
     assert raises(d.build, [1,2,3,4,5,6,7,8], n=3) == RangeError
     assert raises(d.sizeof) == SizeofError
     assert raises(d.sizeof, n=3) == 3
+
+def test_array_metadata():
+    d = Array(3, Byte)
+    obj = d.parse(b"\x01\x02\x03")
+    assert obj._metadata[0] == (0,1)
+    assert obj._metadata[1] == (1,2)
+    assert obj._metadata[2] == (2,3)
 
 def test_array_nontellable():
     assert Array(5, Byte).parse_stream(devzero) == [0,0,0,0,0]
