@@ -1938,6 +1938,7 @@ def test_isparsingbuilding():
     )
     d.sizeof()
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="'/dev/zero' is not available on windows")
 def test_struct_stream():
     d = Struct(
         'fixed' / FixedSized(10, Struct(

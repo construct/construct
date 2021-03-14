@@ -1,4 +1,7 @@
 import pytest
+import platform
+import io
+
 xfail = pytest.mark.xfail
 skip = pytest.mark.skip
 skipif = pytest.mark.skipif
@@ -9,8 +12,22 @@ from construct import *
 from construct.lib import *
 
 ident = lambda x: x
-devzero = open("/dev/zero", "rb")
+if platform.system() == "Windows":
+    class ZeroIO(io.BufferedIOBase):
+        def read(self, __size=None):
+            if __size is not None:
+                return bytes(__size)
+            else:
+                return bytes(0)
 
+        def read1(self, __size=0):
+            return bytes(__size)
+
+    devzero = ZeroIO()
+else:    
+    devzero = open("/dev/zero", "rb")
+
+        
 
 def raises(func, *args, **kw):
     try:

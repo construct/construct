@@ -3,6 +3,7 @@ from construct import *
 from construct.lib import *
 
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="test fails on windows")
 def test_multiprocessing():
     import multiprocessing
 
