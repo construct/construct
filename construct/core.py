@@ -267,7 +267,7 @@ class Construct(object):
 
     def __copy__(self):
         self2 = object.__new__(self.__class__)
-        self2.__setstate__(self, self.__getstate__())
+        self2.__setstate__(self.__getstate__())
         return self2
 
     def parse(self, data, **contextkw):

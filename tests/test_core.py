@@ -2189,3 +2189,14 @@ def test_struct_issue_771():
     assert spec.build(info) == data
     assert spec.sizeof(**info) == 10
 
+def test_struct_copy():
+    import copy
+    d = Struct(
+        "a" / Int16ub,
+        "b" / Int8ub
+    )
+    d_copy = copy.copy(d)
+    
+    common(d, b"\x00\x01\x02", Container(a=1,b=2), 3)
+    common(d_copy, b"\x00\x01\x02", Container(a=1,b=2), 3)
+    
