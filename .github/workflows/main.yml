@@ -22,5 +22,4 @@ jobs:
           pip install pytest pytest-benchmark enum34 numpy arrow ruamel.yaml cloudpickle lz4
       - name: Run tests
         run: |
-          export PYTHONPATH=$PYTHONPATH:`pwd`
           py.test tests/ --benchmark-disable --showlocals --verbose
