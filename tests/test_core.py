@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from declarativeunittest import *
+from tests.declarativeunittest import *
 from construct import *
 from construct.lib import *
 

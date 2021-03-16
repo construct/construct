@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from declarativeunittest import *
+from tests.declarativeunittest import *
 from construct import *
 from construct.lib import *
-from test_compiler import example, exampledata
+from tests.test_compiler import example, exampledata
 
 
 def test_class_bytes_parse(benchmark):
