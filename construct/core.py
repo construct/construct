@@ -5292,6 +5292,8 @@ class Lazy(Subconstruct):
             obj = self.subcon._parsereport(stream, context, path)
             stream_seek(stream, fallback, 0, path)
             return obj
+        len = self.subcon._actualsize(self, context, path)
+        stream_seek(stream, len, 1, path)
         return execute
 
     def _build(self, obj, stream, context, path):
