@@ -1344,6 +1344,20 @@ def test_lazy():
     assert d.build(x) == b'\x00'
     assert d.sizeof() == 1
 
+def test_lazy_seek():
+    d = Struct(
+        "a" / Int8ul,
+        "b" / Lazy(Bytes(2)),
+        "c" / Int16ul,
+        "d" / Lazy(Bytes(4))
+    )
+    obj = d.parse(b"\x01\x01\x02\x45\x67\x04\x98\x76\x65")
+
+    assert obj.a == 1
+    assert obj.b() == b'\x01\x02'
+    assert obj.c == 26437
+    assert obj.d() == b'\x04\x98\x76\x65'
+
 def test_lazystruct():
     d = LazyStruct(
         "num1" / Int8ub,
