@@ -2214,3 +2214,13 @@ def test_switch_issue_913_using_integers():
     common2(d, b"", None, 0, x=0)
     common2(d, b"\xab", 171, 1, x=1)
     common2(d, b"\x09\x00", 9, 2, x=2)
+
+def test_compiled_repeatersdiscard():
+    d = GreedyRange(Byte, discard=True).compile()
+    assert d.parse(b"\x01\x02\x03") == []
+
+    d = Array(3, Byte, discard=True).compile()
+    assert d.parse(b"\x01\x02\x03") == []
+
+    d = RepeatUntil(obj_ == 3, Byte, discard=True).compile()
+    assert d.parse(b"\x01\x02\x03") == []
