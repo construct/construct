@@ -2409,7 +2409,18 @@ class Array(Subconstruct):
         return count * self.subcon._sizeof(context, path)
 
     def _emitparse(self, code):
-        return f"ListContainer(({self.subcon._compileparse(code)}) for i in range({self.count}))"
+        fname = f"parse_array_{code.allocateId()}"
+        block = f"""
+            def {fname}(io, this):
+                list_ = ListContainer()
+                for i in range({self.count}):
+                    obj_ = {self.subcon._compileparse(code)}
+                    if not {self.discard}:
+                        list_.append(obj_)
+                return list_
+        """
+        code.append(block)
+        return f"{fname}(io, this)"
 
     def _emitbuild(self, code):
         return f"ListContainer(reuse(obj[i], lambda obj: ({self.subcon._compilebuild(code)})) for i in range({self.count}))"
@@ -2555,7 +2566,8 @@ class RepeatUntil(Subconstruct):
                 list_ = ListContainer()
                 while True:
                     obj_ = {self.subcon._compileparse(code)}
-                    list_.append(obj_)
+                    if not {self.discard}:
+                        list_.append(obj_)
                     if ({self.predicate}):
                         return list_
         """
