@@ -917,7 +917,9 @@ def Bitwise(subcon):
     r"""
     Converts the stream from bytes to bits, and passes the bitstream to underlying subcon. Bitstream is a stream that contains 8 times as many bytes, and each byte is either \\x00 or \\x01 (in documentation those bytes are called bits).
 
-    Parsing building and size are deferred to subcon, although size gets divided by 8.
+    Parsing building and size are deferred to subcon, although size gets divided by 8 (therefore the subcon's size must be a multiple of 8).
+    
+    Note that by default the bit ordering is from MSB to LSB for every byte (i.e. bit-level little-endian). If you need it reversed, wrap this subcon with :class:`construct.core.BitsSwapped`. 
 
     :param subcon: Construct instance, any field that works with bits (like BitsInteger) or is bit-byte agnostic (like Struct or Flag)
 
@@ -934,6 +936,12 @@ def Bitwise(subcon):
         Container(a=0)(b=0.0)(c=None)
         >>> d.sizeof()
         5
+        >>> d = Bitwise(Bytes(16))
+        >>> d.parse(b'\x01\x03')
+        b'\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x01\x01'
+        >>> d = BitsSwapped(Bitwise(Bytes(16)))
+        >>> d.parse(b'\x01\x03')
+        b'\x01\x00\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00'
     """
 
     try:
@@ -1182,11 +1190,11 @@ class BitsInteger(Construct):
 
     Note that little-endianness is only defined for multiples of 8 bits.
 
-    Byte ordering refers to bytes (chunks of 8 bits) so, for example::
+    Byte ordering (i.e. `swapped` parameter) refers to bytes (chunks of 8 bits) so, for example::
 
         BytesInteger(n, swapped=True) <--> Bitwise(BitsInteger(8*n, swapped=True))
 
-    Swapped argument was recently fixed. To obtain previous (faulty) behavior, you can use `ByteSwapped`, `BitsSwapped` and `Bitwise` in whatever particular order.
+    Swapped argument was recently fixed. To obtain previous (faulty) behavior, you can use `ByteSwapped`, `BitsSwapped` and `Bitwise` in whatever particular order (see examples).
 
     :param length: integer or context lambda, number of bits in the field
     :param signed: bool, whether the value is signed (two's complement), default is False (unsigned)
@@ -1200,7 +1208,7 @@ class BitsInteger(Construct):
 
     Can propagate any exception from the lambda, possibly non-ConstructError.
 
-    Example::
+    Examples::
 
         >>> d = Bitwise(BitsInteger(8)) or Bitwise(Octet)
         >>> d.parse(b"\x10")
@@ -1209,6 +1217,24 @@ class BitsInteger(Construct):
         b'\xff'
         >>> d.sizeof()
         1
+        >>> d = BitsInteger(2)
+        >>> d.parse(b'\x01\x00') # Bit-Level Big-Endian
+        2
+        >>> d = ByteSwapped(BitsInteger(2))
+        >>> d.parse(b'\x01\x00') # Bit-Level Little-Endian
+        1
+        >>> d = BitsInteger(16) # Byte-Level Big-Endian, Bit-Level Big-Endian
+        >>> d.build(5 + 19*256)
+        b'\x00\x00\x00\x01\x00\x00\x01\x01\x00\x00\x00\x00\x00\x01\x00\x01'
+        >>> d = BitsInteger(16, swapped=True) # Byte-Level Little-Endian, Bit-Level Big-Endian
+        >>> d.build(5 + 19*256)
+        b'\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x01\x00\x00\x01\x01'
+        >>> d = ByteSwapped(BitsInteger(16)) # Byte-Level Little-Endian, Bit-Level Little-Endian
+        >>> d.build(5 + 19*256)
+        b'\x01\x00\x01\x00\x00\x00\x00\x00\x01\x01\x00\x00\x01\x00\x00\x00'
+        >>> d = ByteSwapped(BitsInteger(16, swapped=True)) # Byte-Level Big-Endian, Bit-Level Little-Endian
+        >>> d.build(5 + 19*256)
+        b'\x01\x01\x00\x00\x01\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00'
     """
 
     def __init__(self, length, signed=False, swapped=False):
