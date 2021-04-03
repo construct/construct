@@ -3321,6 +3321,10 @@ class NamedTuple(Adapter):
         return self.subcon._compilefulltype(ksy, bitwise)
 
 
+class TimestampAdapter(Adapter):
+    """Used internally."""
+
+
 def Timestamp(subcon, unit, epoch):
     r"""
     Datetime, represented as `Arrow <https://pypi.org/project/arrow/>`_ object.
@@ -3364,7 +3368,7 @@ def Timestamp(subcon, unit, epoch):
             "minute" / BitsInteger(6),
             "second" / BitsInteger(5),
         )
-        class MsdosTimestampAdapter(Adapter):
+        class MsdosTimestampAdapter(TimestampAdapter):
             def _decode(self, obj, context, path):
                 return arrow.Arrow(1980,1,1).shift(years=obj.year, months=obj.month-1, days=obj.day-1, hours=obj.hour, minutes=obj.minute, seconds=obj.second*2)
             def _encode(self, obj, context, path):
@@ -3375,12 +3379,12 @@ def Timestamp(subcon, unit, epoch):
     else:
         if isinstance(epoch, integertypes):
             epoch = arrow.Arrow(epoch, 1, 1)
-        class TimestampAdapter(Adapter):
+        class EpochTimestampAdapter(TimestampAdapter):
             def _decode(self, obj, context, path):
                 return epoch.shift(seconds=obj*unit)
             def _encode(self, obj, context, path):
                 return int((obj-epoch).total_seconds()/unit)
-        macro = TimestampAdapter(subcon)
+        macro = EpochTimestampAdapter(subcon)
 
     def _emitfulltype(ksy, bitwise):
         return subcon._compilefulltype(ksy, bitwise)
