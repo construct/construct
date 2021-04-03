@@ -173,7 +173,7 @@ class Path(ExprMixin):
         if self.__parent is None:
             return self.__name
         else:
-            return "%r.%s" % (self.__parent, self.__field)
+            return "%s[%r]" % (self.__parent, self.__field)
 
     def __str__(self):
         if self.__parent is None:

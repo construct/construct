@@ -1,4 +1,4 @@
-from declarativeunittest import *
+from tests.declarativeunittest import *
 from construct.lib.hex import *
 
 

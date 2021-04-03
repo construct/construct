@@ -4,9 +4,10 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: [ '3.6', '3.7', '3.8', '3.9', 'pypy3' ]
     name: Python ${{ matrix.python-version }}
     steps:
@@ -22,5 +23,4 @@ jobs:
           pip install pytest pytest-benchmark enum34 numpy arrow ruamel.yaml cloudpickle lz4
       - name: Run tests
         run: |
-          export PYTHONPATH=$PYTHONPATH:`pwd`
           py.test tests/ --benchmark-disable --showlocals --verbose

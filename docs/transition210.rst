@@ -25,3 +25,17 @@ ZigZag signed integer encoding from Protocol Buffers added
 FormatField now supports ? format string
 
 CompressedLZ4 tunneling class added
+
+Windows is now officially supported and tested for
+
+BytesInteger and BitsInteger are checking numbers are valid
+
+BitsInteger swapped semantic was fixed
+
+Compilation covers building as well, parsing slightly improved
+
+Array GreedyRange RepeatUntil builders use discard option
+
+Sequence build fixed, no longer skips subcons on short obj
+
+Lazy class fixed, seeks the not-yet parsed subcon

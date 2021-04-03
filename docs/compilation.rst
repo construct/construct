@@ -10,29 +10,35 @@ Overall
 
 Construct 2.9 adds an experimental feature: compiling user made constructs into much faster (but less feature-rich) code. If you are familiar with Kaitai Struct, an alternative framework to Construct, Kaitai compiles yaml-based schemas into pure Python modules. Construct on the other hand, defines schemas in pure Python and compiles them into pure Python modules. Once you define a construct, you can use it to parse and build blobs without compilation. Compilation has only one purpose: performance.
 
-It should be made clear that currently the compiler supports only parsing. Building and sizeof are deferred to original constructs, from which a compiled instance was made. Building support may be added in the future, depending on popularity of this feature. In that sense, perhaps the documentation should use the term "compiled parser" rather than "compiled construct".
+It should be made clear that currently the compiler supports only parsing and building. Sizeof is deferred to original construct, from which a compiled instance was made.
 
 
 Requirements
 ---------------
 
-Compilation feature requires Construct 2.9, preferrably the newest version to date. More importantly, you should have a test suite of your own. Construct aims to be reliable, but the compiler makes some undocumented assumptions, and generates a code that "takes shortcuts". Since few checks are ommited by generated code, you should not use it to parse corrupted data.
+Compilation feature requires Construct 2.9 for compiled parsing and Construct 2.10 for compiled building, preferrably the newest version to date. More importantly, you should have a test suite of your own. Construct aims to be reliable, but the compiler makes a lot of undocumented assumptions, and generates a code that "takes shortcuts" a lot. Since some checks are ommited by generated code, you should not use it to parse corrupted or untrusted data.
 
 
 Restrictions
 ---------------
 
-Compiled classes only parse faster, building and sizeof defers to core classes
+Compiled classes only parse and build faster, sizeof defers to core classes
 
 Sizeof is applied during compilation (not during parsing and building)
 
-Lambdas (unlike this expressions) are not compilable
+Lambdas (unlike this expressions) are not supported
 
 Exceptions do not include `path` information
 
+enum34 is not supported, please use pure Enum constructions
+
+_index context entry is not supported, neither is Index class
+
 Struct Sequence FocusedSeq Union LazyStruct do not support `_subcons _stream` context entries
 
-Parsed hooks are not supported, ignored
+Parsed hooks are not supported, so is discard option, ignored
+
+Debugger is not supported, ignored
 
 
 Compiling schemas
@@ -50,10 +56,11 @@ Container(num=1)
 Performance boost can be easily measured. This method also happens to be testing the correctness of the compiled parser, by making sure that both original and compiled instance parse into same results.
 
 >>> print(st.benchmark(sampledata))
-Timeit measurements:
-parsing:           0.0000475557 sec/call
-parsing compiled:  0.0000159182 sec/call
-building:          0.0000591526 sec/call
+Compiled instance performance:
+parsing:            0.0001288388 sec/call
+parsing compiled:   0.0000452531 sec/call
+building:           0.0001240775 sec/call
+building compiled:  0.0001062776 sec/call
 
 
 Motivation

@@ -25,7 +25,7 @@ html:
 installdeps:
 	apt-get install python3.8 python3-sphinx --upgrade
 	python3.8 -m pip install pytest pytest-benchmark pytest-cov twine --upgrade
-	python3.8 -m pip install enum34 numpy arrow ruamel.yaml cloudpickle --upgrade
+	python3.8 -m pip install enum34 numpy arrow ruamel.yaml cloudpickle lz4 --upgrade
 
 version:
 	./version-increment

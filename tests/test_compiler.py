@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from declarativeunittest import *
+from tests.declarativeunittest import *
 from construct import *
 from construct.lib import *
 
@@ -10,39 +10,45 @@ example = Struct(
 
     "bytes1" / Bytes(4),
     "bytes2" / Bytes(this.num),
-    "greedybytes" / Prefixed(Byte, GreedyBytes),
-    "bitwise1" / Bitwise(BitsInteger(8, swapped=False)),
-    "bitwise2" / Bitwise(BitsInteger(8, swapped=True)),
-    "bytewise1" / Bitwise(Bytewise(BytesInteger(16, swapped=True))),
-    "bytewise2" / Bitwise(Bytewise(BytesInteger(16, swapped=False))),
+    "greedybytes1" / Prefixed(Byte, GreedyBytes),
+    "bitwise1" / Bitwise(BitsInteger(16, swapped=False)),
+    "bitwise2" / Bitwise(BitsInteger(16, swapped=True)),
+    "bytewise1" / Bytewise(BytesInteger(16, swapped=False)),
+    "bytewise2" / Bytewise(BytesInteger(16, swapped=True)),
 
     "formatfield" / FormatField(">", "B"),
     "bytesinteger0" / BytesInteger(0),
-    "bytesinteger1" / BytesInteger(16, swapped=True),
-    "bytesinteger2" / BytesInteger(16, swapped=False),
+    "bytesinteger1" / BytesInteger(16, signed=True),
+    "bytesinteger2" / BytesInteger(16, swapped=True),
     "bytesinteger3" / BytesInteger(this.num),
-    "bitsinteger0" / Bitwise(BitsInteger(0)),
-    "bitsinteger1" / Bitwise(BitsInteger(8, swapped=False)),
-    "bitsinteger2" / Bitwise(BitsInteger(8, swapped=True)),
-    # - unknown cause (SizeofError: cannot calculate size, key not found in context)
-    # "bitsinteger3" / Bitwise(BitsInteger(this.num)),
+    "bitsinteger0" / BitsInteger(0),
+    "bitsinteger1" / BitsInteger(16, signed=True),
+    "bitsinteger2" / BitsInteger(16, swapped=True),
+    "bitsinteger3" / BitsInteger(this.num),
+    "int1" / Byte,
+    "int2" / Int64ub,
+    "float1" / Half,
+    "float2" / Single,
+    "float3" / Double,
     "varint" / VarInt,
-    "byte" / Byte,
-    "float1" / Single,
-    "float2" / Double,
+    "zigzag" / ZigZag,
 
-    "string2" / PaddedString(12, "ascii"),
+    "string1" / PaddedString(12, "ascii"),
     "string2" / PaddedString(12, "utf8"),
     "string3" / PaddedString(12, "utf16"),
     "string4" / PaddedString(12, "utf32"),
     "pascalstring1" / PascalString(Byte, "ascii"),
     "pascalstring2" / PascalString(Byte, "utf8"),
+    "pascalstring3" / PascalString(Byte, "utf16"),
+    "pascalstring4" / PascalString(Byte, "utf32"),
     "cstring1" / CString("ascii"),
     "cstring2" / CString("utf8"),
     "cstring3" / CString("utf16"),
     "cstring4" / CString("utf32"),
     "greedystring1" / Prefixed(Byte, GreedyString("ascii")),
     "greedystring2" / Prefixed(Byte, GreedyString("utf8")),
+    "greedystring3" / Prefixed(Byte, GreedyString("utf16")),
+    "greedystring4" / Prefixed(Byte, GreedyString("utf32")),
 
     "flag" / Flag,
     "enum1" / Enum(Byte, zero=0),
@@ -51,9 +57,12 @@ example = Struct(
     "flagsenum2" / FlagsEnum(Byte),
     "mapping" / Mapping(Byte, {"zero":0}),
 
-    "struct" / Struct("field" / Byte),
+    "struct1" / Struct("field" / Byte, Check(this.field == 0)),
+    "struct2" / Struct("field" / Byte, StopIf(True), Error),
     "sequence1" / Sequence(Byte, Byte),
     "sequence2" / Sequence("num1" / Byte, "num2" / Byte),
+    # WARNING: this no longer rebuilds after fixing
+    # "sequence3" / Sequence("num1" / Byte, "num2" / Byte, StopIf(True), Error),
 
     "array1" / Array(5, Byte),
     "array2" / Array(this.num, Byte),
@@ -62,11 +71,14 @@ example = Struct(
 
     "const1" / Const(bytes(4)),
     "const2" / Const(0, Int32ub),
-    "computed" / Computed(this.num),
-    "index1" / Array(3, Index),
-    "index2" / RestreamData(b"\x00", GreedyRange(Byte >> Index)),
-    "index3" / RestreamData(b"\x00", RepeatUntil(True, Byte >> Index)),
-    "rebuild" / Rebuild(Byte, len_(this.array1)),
+    "computed1" / Computed("string literal"),
+    "computed2" / Computed(this.num),
+    "computedarray" / Computed([1,2,3]),
+    # WARNING: _index is not supported in compiled classes
+    # "index1" / Array(3, Index),
+    # "index2" / RestreamData(b"\x00", GreedyRange(Byte >> Index)),
+    # "index3" / RestreamData(b"\x00", RepeatUntil(True, Byte >> Index)),
+    "rebuild" / Rebuild(Byte, len_(this.computedarray)),
     "default" / Default(Byte, 0),
     Check(this.num == 0),
     "check" / Check(this.num == 0),
@@ -103,7 +115,8 @@ example = Struct(
     "switch3" / Switch(this.num, {}, default=Byte),
     "stopif0" / StopIf(this.num == 255),
     "stopif1" / Struct(StopIf(this._.num == 0), Error),
-    "stopif2" / Sequence(StopIf(this._.num == 0), Error),
+    # WARNING: this no longer rebuilds after fixing
+    # "stopif2" / Sequence(StopIf(this._.num == 0), Error),
     "stopif3" / GreedyRange(StopIf(this.num == 0)),
 
     "padding" / Padding(2),
@@ -126,6 +139,7 @@ example = Struct(
     "prefixed1" / Prefixed(Byte, GreedyBytes),
     "prefixed2" / RestreamData(b"\x01", Prefixed(Byte, GreedyBytes, includelength=True)),
     "prefixedarray" / PrefixedArray(Byte, Byte),
+    # WARNING: no buildemit yet
     "fixedsized" / FixedSized(10, GreedyBytes),
     "nullterminated" / RestreamData(b'\x01\x00', NullTerminated(GreedyBytes)),
     "nullstripped" / RestreamData(b'\x01\x00', NullStripped(GreedyBytes)),
@@ -147,29 +161,30 @@ example = Struct(
 
     # adapters and validators
 
-    Probe(),
-    # - fails due to unknown causes (Expected an identifier or literal)
-    # "probe" / Probe(),
+    "probe" / Probe(),
     "debugger" / Debugger(Byte),
 
     "items1" / Computed([1,2,3]),
-    "len_" / Computed(len_(this.items1)),
-    # - faulty list_ implementation, compiles into correct code
+    "len1" / Computed(len_(this.items1)),
+    Check(this.len1 == 3),
+
+    # WARNING: faulty list_ implementation, but compiles into correct code?
     # "repeatuntil2" / RepeatUntil(list_ == [0], Byte),
-    # "repeatuntil3" / RepeatUntil(list_[-1] == 0, Byte),
+    # "repeatuntil3" / RepeatUntil(obj_ == 0, Byte),
 )
 exampledata = bytes(1000)
 
 
-def test_example_benchmark():
+def test_compiled_example_benchmark():
     d = example.compile(filename="example_compiled.py")
     d.benchmark(exampledata, filename="example_benchmark.txt")
 
-def test_compiled_benchmark():
-    d = Struct().compile()
-    d.benchmark(b"")
-    d = Struct(Error).compile()
-    d.benchmark(b"")
-
-def test_compiler_recursion():
-    raises(Construct().compile) == NotImplementedError
+def test_compiled_example_integrity():
+    d = example
+    obj = d.parse(exampledata)
+    data = d.build(obj)
+    d = d.compile()
+    obj2 = d.parse(exampledata)
+    data2 = d.build(obj)
+    assert obj == obj2
+    assert data == data2

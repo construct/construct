@@ -74,8 +74,8 @@ def hexdump(data, linesize):
     prettylines.append('hexundump("""')
     for i in range(0, len(data), linesize):
         line = data[i:i+linesize]
-        hextext = " ".join(HEXPRINT[b] for b in iterateints(line))
-        rawtext = "".join(PRINTABLE[b] for b in iterateints(line))
+        hextext = " ".join(HEXPRINT[b] for b in line)
+        rawtext = "".join(PRINTABLE[b] for b in line)
         prettylines.append(fmt % (i, str(hextext), str(rawtext)))
     prettylines.append('""")')
     prettylines.append("")

@@ -1,4 +1,4 @@
-from declarativeunittest import *
+from tests.declarativeunittest import *
 from construct import *
 from construct.lib import *
 
@@ -6,14 +6,14 @@ from construct.lib import *
 def test_path():
     path = Path("path")
     x = ~((path.foo * 2 + 3 << 2) % 11)
-    assert repr(x) == "not ((((path.foo * 2) + 3) << 2) % 11)"
+    assert repr(x) == "not ((((path['foo'] * 2) + 3) << 2) % 11)"
     assert str(x) == "not ((((path['foo'] * 2) + 3) << 2) % 11)"
     assert x(dict(foo=7)) == False
 
 def test_this():
-    assert repr(this.x) == "this.x"
+    assert repr(this.x) == "this['x']"
     assert str(this.x) == "this['x']"
-    assert repr(this.x == 0) == "(this.x == 0)"
+    assert repr(this.x == 0) == "(this['x'] == 0)"
     assert str(this.x == 0) == "(this['x'] == 0)"
 
     this_example = Struct(
@@ -47,7 +47,7 @@ def test_this_getitem():
     common(d, b"\x00", Container(num=0, dup1=0, dup2=0), 1)
 
 def test_functions():
-    assert repr(len_(this.x)) == "len_(this.x)"
+    assert repr(len_(this.x)) == "len_(this['x'])"
     assert str(len_(this.x)) == "len_(this['x'])"
     assert repr(len_) == "len_"
     assert str(len_) == "len_"
