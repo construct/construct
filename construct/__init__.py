@@ -194,6 +194,7 @@ __all__ = [
     'TerminatedError',
     'this',
     'Timestamp',
+    'TimestampAdapter',
     'TimestampError',
     'Transformed',
     'Tunnel',
