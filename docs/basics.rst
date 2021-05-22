@@ -127,6 +127,14 @@ Thanks to blapid, containers can also be searched. Structs nested within Structs
 >>> con.search_all("a")
 [1, 2]
 
+Note that not all parameters can be accessed via the dot operator. If the name of an item matches a method name of the Container (which is based on a dict), it can only be accessed via the square brackets. This includes the following names: clear, copy, fromkeys, get, items, keys, move_to_end, pop, popitem, search, search_all, setdefault, update, values.
+
+>>> con = Container(update=5)
+>>> con["update"]
+5
+>>> con.update  # not usable via dot access
+<bound method Container.update of Container(update=5)>
+
 
 Nesting and embedding
 ---------------------
