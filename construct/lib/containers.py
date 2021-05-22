@@ -60,6 +60,8 @@ class Container(collections.OrderedDict):
     r"""
     Generic ordered dictionary that allows both key and attribute access, and preserves key order by insertion. Adding keys is preferred using \*\*entrieskw (requires Python 3.6). Equality does NOT check item order. Also provides regex searching.
 
+    Note that not all parameters can be accessed via attribute access (dot operator). If the name of an item matches a method name of the Container, it can only be accessed via key acces (square brackets). This includes the following names: clear, copy, fromkeys, get, items, keys, move_to_end, pop, popitem, search, search_all, setdefault, update, values.
+
     Example::
 
         # empty dict
