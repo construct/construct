@@ -1305,6 +1305,7 @@ def test_compressedlz4():
     assert len(d.build(zeros)) < 100
     assert raises(d.sizeof) == SizeofError
 
+@xfail(ONWINDOWS and PYPY, reason="no wheel for 'cryptography' is currently available for pypy on windows")
 def test_encryptedsym():
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
@@ -1330,6 +1331,7 @@ def test_encryptedsym():
     assert raises(EncryptedSym(GreedyBytes, "AES").build, b"") == CipherError
     assert raises(EncryptedSym(GreedyBytes, "AES").parse, b"") == CipherError
 
+@xfail(ONWINDOWS and PYPY, reason="no wheel for 'cryptography' is currently available for pypy on windows")
 def test_encryptedsym_cbc_example():
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     d = Struct(
@@ -1349,6 +1351,7 @@ def test_encryptedsym_cbc_example():
     obj = d.parse(byts, key=key128)
     assert obj.enc_data == Container(width=5, height=4)
 
+@xfail(ONWINDOWS and PYPY, reason="no wheel for 'cryptography' is currently available for pypy on windows")
 def test_encryptedsymaead():
     from cryptography.hazmat.primitives.ciphers import aead
     key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
@@ -1382,6 +1385,7 @@ def test_encryptedsymaead():
     assert raises(EncryptedSymAead(GreedyBytes, "AESGCM", bytes(16)).build, b"") == CipherError
     assert raises(EncryptedSymAead(GreedyBytes, "AESGCM", bytes(16)).parse, b"") == CipherError
 
+@xfail(ONWINDOWS and PYPY, reason="no wheel for 'cryptography' is currently available for pypy on windows")
 def test_encryptedsymaead_gcm_example():
     from cryptography.hazmat.primitives.ciphers import aead
     d = Struct(
