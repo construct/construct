@@ -5629,7 +5629,7 @@ class EncryptedSymAead(Tunnel):
 
     This construct is heavily based on the `cryptography` library, which supports the following AEAD ciphers. For more details please see the documentation of that library.
     
-    Algorithms:
+    AEAD ciphers:
     - AESGCM
     - AESCCM
     - ChaCha20Poly1305
