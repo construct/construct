@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies  
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-benchmark enum34 numpy arrow ruamel.yaml cloudpickle lz4
+          pip install pytest pytest-benchmark enum34 numpy arrow ruamel.yaml cloudpickle lz4 cryptography
       - name: Run tests
         run: |
           py.test tests/ --benchmark-disable --showlocals --verbose
