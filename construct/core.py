@@ -5562,7 +5562,7 @@ class EncryptedSym(Tunnel):
     :param subcon: Construct instance, subcon used for storing the value
     :param cipher: Cipher object or context lambda from cryptography.hazmat.primitives.ciphers
 
-    :raises ImportError: needed module could not be imported by ctor
+    :raises ImportError: needed module could not be imported
     :raises StreamError: stream failed when reading until EOF
     :raises CipherError: no cipher object is provided
     :raises CipherError: an AEAD cipher is used
@@ -5571,6 +5571,7 @@ class EncryptedSym(Tunnel):
 
     Example::
 
+        >>> from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
         >>> d = Struct(
         ...     "iv" / Default(Bytes(16), os.urandom(16)),
         ...     "enc_data" / EncryptedSym(
@@ -5596,7 +5597,6 @@ class EncryptedSym(Tunnel):
 
     def __init__(self, subcon, cipher):
         super().__init__(subcon)
-        import cryptography
         self.cipher = cipher
 
     def _evaluate_cipher(self, context, path):
@@ -5617,6 +5617,79 @@ class EncryptedSym(Tunnel):
         cipher = self._evaluate_cipher(context, path)
         encryptor = cipher.encryptor()
         return encryptor.update(data) + encryptor.finalize()
+
+
+class EncryptedSymAead(Tunnel):
+    r"""
+    Perform symmetrical AEAD encryption and decryption of the underlying stream before processing subcon. When parsing, entire stream is consumed. When building, it puts encrypted bytes and tag without marking the end.
+
+    Parsing and building transforms all bytes using the selected cipher and also authenticates the `associated_data`. Since data is processed until EOF, it behaves similar to `GreedyBytes`. Size is undefined.
+
+    The key for encryption / decryption should be passed via `contextkw` to `build` / `parse`.
+
+    This construct is heavily based on the `cryptography` library, which supports the following AEAD ciphers. For more details please see the documentation of that library.
+    
+    Algorithms:
+    - AESGCM
+    - AESCCM
+    - ChaCha20Poly1305
+
+    :param subcon: Construct instance, subcon used for storing the value
+    :param cipher: Cipher object or context lambda from cryptography.hazmat.primitives.ciphers
+
+    :raises ImportError: needed module could not be imported
+    :raises StreamError: stream failed when reading until EOF
+    :raises CipherError: unsupported cipher object is provided
+
+    Can propagate cryptography.exceptions exceptions.
+
+    Example::
+
+        >>> from cryptography.hazmat.primitives.ciphers import aead
+        >>> d = Struct(
+        ...     "nonce" / Default(Bytes(16), os.urandom(16)),
+        ...     "associated_data" / Bytes(21),
+        ...     "enc_data" / EncryptedSymAead(
+        ...         GreedyBytes,
+        ...         lambda ctx: aead.AESGCM(ctx._.key),
+        ...         this.nonce,
+        ...         this.associated_data
+        ...     )
+        ... )
+        >>> key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+        >>> d.build({"associated_data": b"This is authenticated", "enc_data": b"The secret message"}, key=key128)
+        b'\xe3\xb0"\xbaQ\x18\xd3|\x14\xb0q\x11\xb5XZ\xeeThis is authenticated\x88~\xe5Vh\x00\x01m\xacn\xad k\x02\x13\xf4\xb4[\xbe\x12$\xa0\x7f\xfb\xbf\x82Ar\xb0\x97C\x0b\xe3\x85'
+        >>> d.parse(b'\xe3\xb0"\xbaQ\x18\xd3|\x14\xb0q\x11\xb5XZ\xeeThis is authenticated\x88~\xe5Vh\x00\x01m\xacn\xad k\x02\x13\xf4\xb4[\xbe\x12$\xa0\x7f\xfb\xbf\x82Ar\xb0\x97C\x0b\xe3\x85', key=key128)
+        Container: 
+            nonce = b'\xe3\xb0"\xbaQ\x18\xd3|\x14\xb0q\x11\xb5XZ\xee' (total 16)
+            associated_data = b'This is authenti'... (truncated, total 21)
+            enc_data = b'The secret messa'... (truncated, total 18)
+   """
+
+    def __init__(self, subcon, cipher, nonce, associated_data=b""):
+        super().__init__(subcon)
+        self.cipher = cipher
+        self.nonce = nonce
+        self.associated_data = associated_data
+
+    def _evaluate_cipher(self, context, path):
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM, AESCCM, ChaCha20Poly1305
+        cipher = evaluate(self.cipher, context)
+        if not isinstance(cipher, (AESGCM, AESCCM, ChaCha20Poly1305)):
+            raise CipherError(f"cipher object {repr(cipher)} is not supported", path=path)
+        return cipher
+
+    def _decode(self, data, context, path):
+        cipher = self._evaluate_cipher(context, path)
+        nonce = evaluate(self.nonce, context)
+        associated_data = evaluate(self.associated_data, context)
+        return cipher.decrypt(nonce, data, associated_data)
+
+    def _encode(self, data, context, path):
+        cipher = self._evaluate_cipher(context, path)
+        nonce = evaluate(self.nonce, context)
+        associated_data = evaluate(self.associated_data, context)
+        return cipher.encrypt(nonce, data, associated_data)
 
 
 class Rebuffered(Subconstruct):

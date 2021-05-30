@@ -75,6 +75,7 @@ __all__ = [
     'Default',
     'Double',
     'EncryptedSym',
+    'EncryptedSymAead',
     'Enum',
     'EnumInteger',
     'EnumIntegerString',

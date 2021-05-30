@@ -1305,7 +1305,6 @@ def test_compressedlz4():
     assert len(d.build(zeros)) < 100
     assert raises(d.sizeof) == SizeofError
 
-
 def test_encryptedsym():
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
@@ -1331,7 +1330,6 @@ def test_encryptedsym():
     assert raises(EncryptedSym(GreedyBytes, "AES").build, b"") == CipherError
     assert raises(EncryptedSym(GreedyBytes, "AES").parse, b"") == CipherError
 
-
 def test_encryptedsym_cbc_example():
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     d = Struct(
@@ -1351,6 +1349,56 @@ def test_encryptedsym_cbc_example():
     obj = d.parse(byts, key=key128)
     assert obj.enc_data == Container(width=5, height=4)
 
+def test_encryptedsymaead():
+    from cryptography.hazmat.primitives.ciphers import aead
+    key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+    key256 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+    nonce = b"\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f"
+
+    # AES 128/256 bit - GCM
+    d = Struct(
+        "associated_data" / Bytes(21),
+        "data" / EncryptedSymAead(
+            GreedyBytes,
+            lambda ctx: aead.AESGCM(ctx._.key),
+            this._.nonce,
+            this.associated_data
+        )
+    )
+    common(
+        d,
+        b"This is authenticated\xb6\xd3\x64\x0c\x7a\x31\xaa\x16\xa3\x58\xec\x17\x39\x99\x2e\xf8\x4e\x41\x17\x76\x3f\xd1\x06\x47\x04\x9f\x42\x1c\xf4\xa9\xfd\x99\x9c\xe9",
+        Container(associated_data=b"This is authenticated", data=b"The secret message"),
+        key=key128,
+        nonce=nonce
+    )
+    common(
+        d,
+        b"This is authenticated\xde\xb4\x41\x79\xc8\x7f\xea\x8d\x0e\x41\xf6\x44\x2f\x93\x21\xe6\x37\xd1\xd3\x29\xa4\x97\xc3\xb5\xf4\x81\x72\xa1\x7f\x3b\x9b\x53\x24\xe4",
+        Container(associated_data=b"This is authenticated", data=b"The secret message"),
+        key=key256,
+        nonce=nonce
+    )
+    assert raises(EncryptedSymAead(GreedyBytes, "AESGCM", bytes(16)).build, b"") == CipherError
+    assert raises(EncryptedSymAead(GreedyBytes, "AESGCM", bytes(16)).parse, b"") == CipherError
+
+def test_encryptedsymaead_gcm_example():
+    from cryptography.hazmat.primitives.ciphers import aead
+    d = Struct(
+        "nonce" / Default(Bytes(16), os.urandom(16)),
+        "associated_data" / Bytes(21),
+        "enc_data" / EncryptedSymAead(
+            GreedyBytes,
+            lambda ctx: aead.AESGCM(ctx._.key),
+            this.nonce,
+            this.associated_data
+        )
+    )
+    key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+    byts = d.build({"associated_data": b"This is authenticated", "enc_data": b"The secret message"}, key=key128)
+    obj = d.parse(byts, key=key128)
+    assert obj.enc_data == b"The secret message"
+    assert obj.associated_data == b"This is authenticated"
 
 def test_rebuffered():
     data = b"0" * 1000
