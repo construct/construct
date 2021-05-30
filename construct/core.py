@@ -70,6 +70,9 @@ class ChecksumError(ConstructError):
     pass
 class CancelParsing(ConstructError):
     pass
+class CipherError(ConstructError):
+    pass
+
 
 
 #===============================================================================
@@ -5520,6 +5523,100 @@ class CompressedLZ4(Tunnel):
 
     def _encode(self, data, context, path):
         return self.lib.compress(data)
+
+
+class EncryptedSym(Tunnel):
+    r"""
+    Perform symmetrical encryption and decryption of the underlying stream before processing subcon. When parsing, entire stream is consumed. When building, it puts encrypted bytes without marking the end.
+
+    Parsing and building transforms all bytes using the selected cipher. Since data is processed until EOF, it behaves similar to `GreedyBytes`. Size is undefined.
+
+    The key for encryption / decryption should be passed via `contextkw` to `build` / `parse`.
+
+    This construct is heavily based on the `cryptography` library, which supports the following algorithms / modes. For more details please see the documentation of that library.
+    
+    Algorithms:
+    - AES
+    - Camellia
+    - ChaCha20
+    - TripleDES
+    - CAST5
+    - SEED
+    - SM4
+    - Blowfish (weak cipher)
+    - ARC4 (weak cipher)
+    - IDEA (weak cipher)
+
+    Modes:
+    - CBC
+    - CTR
+    - OFB
+    - CFB
+    - CFB8
+    - XTS
+    - ECB (insecure)
+
+    .. note:: Keep in mind that some of the algorithms require padding of the data. This can be done e.g. with :class:`~construct.core.Aligned`
+    .. note:: For GCM mode use :class:`~construct.core.EncryptedSymAead`
+
+    :param subcon: Construct instance, subcon used for storing the value
+    :param cipher: Cipher object or context lambda from cryptography.hazmat.primitives.ciphers
+
+    :raises ImportError: needed module could not be imported by ctor
+    :raises StreamError: stream failed when reading until EOF
+    :raises CipherError: no cipher object is provided
+    :raises CipherError: an AEAD cipher is used
+
+    Can propagate cryptography.exceptions exceptions.
+
+    Example::
+
+        >>> d = Struct(
+        ...     "iv" / Default(Bytes(16), os.urandom(16)),
+        ...     "enc_data" / EncryptedSym(
+        ...         Aligned(16,
+        ...             Struct(
+        ...                 "width" / Int16ul,
+        ...                 "height" / Int16ul
+        ...             )
+        ...         ),
+        ...         lambda ctx: Cipher(algorithms.AES(ctx._.key), modes.CBC(ctx.iv))
+        ...     )
+        ... )
+        >>> key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+        >>> d.build({"enc_data": {"width": 5, "height": 4}}, key=key128)
+        b"o\x11i\x98~H\xc9\x1c\x17\x83\xf6|U:\x1a\x86+\x00\x89\xf7\x8e\xc3L\x04\t\xca\x8a\xc8\xc2\xfb'\xc8"
+        >>> d.parse(b"o\x11i\x98~H\xc9\x1c\x17\x83\xf6|U:\x1a\x86+\x00\x89\xf7\x8e\xc3L\x04\t\xca\x8a\xc8\xc2\xfb'\xc8", key=key128)
+        Container: 
+            iv = b'o\x11i\x98~H\xc9\x1c\x17\x83\xf6|U:\x1a\x86' (total 16)
+            enc_data = Container: 
+                width = 5
+                height = 4
+   """
+
+    def __init__(self, subcon, cipher):
+        super().__init__(subcon)
+        import cryptography
+        self.cipher = cipher
+
+    def _evaluate_cipher(self, context, path):
+        from cryptography.hazmat.primitives.ciphers import Cipher, modes
+        cipher = evaluate(self.cipher, context)
+        if not isinstance(cipher, Cipher):
+            raise CipherError(f"cipher {repr(cipher)} is no cryptography.hazmat.primitives.ciphers.Cipher object", path=path)
+        if isinstance(cipher.mode, modes.GCM):
+            raise CipherError(f"AEAD cipher not supported", path=path)
+        return cipher
+
+    def _decode(self, data, context, path):
+        cipher = self._evaluate_cipher(context, path)
+        decryptor = cipher.decryptor()
+        return decryptor.update(data) + decryptor.finalize()
+
+    def _encode(self, data, context, path):
+        cipher = self._evaluate_cipher(context, path)
+        encryptor = cipher.encryptor()
+        return encryptor.update(data) + encryptor.finalize()
 
 
 class Rebuffered(Subconstruct):

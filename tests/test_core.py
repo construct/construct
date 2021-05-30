@@ -1305,6 +1305,53 @@ def test_compressedlz4():
     assert len(d.build(zeros)) < 100
     assert raises(d.sizeof) == SizeofError
 
+
+def test_encryptedsym():
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+    key256 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+    iv = b"\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f"
+    nonce = iv
+
+    # AES 128/256 bit - ECB
+    d = EncryptedSym(GreedyBytes, lambda ctx: Cipher(algorithms.AES(ctx.key), modes.ECB()))
+    common(d, b"\xf4\x0f\x54\xb7\x6a\x7a\xf1\xdb\x92\x73\x14\xde\x2f\xa0\x3e\x2d", b'Secret Message..', key=key128, iv=iv)
+    common(d, b"\x82\x6b\x01\x82\x90\x02\xa1\x9e\x35\x0a\xe2\xc3\xee\x1a\x42\xf5", b'Secret Message..', key=key256, iv=iv)
+
+    # AES 128/256 bit - CBC
+    d = EncryptedSym(GreedyBytes, lambda ctx: Cipher(algorithms.AES(ctx.key), modes.CBC(ctx.iv)))
+    common(d, b"\xba\x79\xc2\x62\x22\x08\x29\xb9\xfb\xd3\x90\xc4\x04\xb7\x55\x87", b'Secret Message..', key=key128, iv=iv)
+    common(d, b"\x60\xc2\x45\x0d\x7e\x41\xd4\xf8\x85\xd4\x8a\x64\xd1\x45\x49\xe3", b'Secret Message..', key=key256, iv=iv)
+
+    # AES 128/256 bit - CTR
+    d = EncryptedSym(GreedyBytes, lambda ctx: Cipher(algorithms.AES(ctx.key), modes.CTR(ctx.nonce)))
+    common(d, b"\x80\x78\xb6\x0c\x07\xf5\x0c\x90\xce\xa2\xbf\xcb\x5b\x22\xb9\xb5", b'Secret Message..', key=key128, nonce=nonce)
+    common(d, b"\x6a\xae\x7b\x86\x1a\xa6\xe0\x6a\x49\x02\x02\x1b\xf2\x3c\xd8\x0d", b'Secret Message..', key=key256, nonce=nonce)
+
+    assert raises(EncryptedSym(GreedyBytes, "AES").build, b"") == CipherError
+    assert raises(EncryptedSym(GreedyBytes, "AES").parse, b"") == CipherError
+
+
+def test_encryptedsym_cbc_example():
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    d = Struct(
+        "iv" / Default(Bytes(16), os.urandom(16)),
+        "enc_data" / EncryptedSym(
+            Aligned(16,
+                Struct(
+                    "width" / Int16ul,
+                    "height" / Int16ul
+                )
+            ),
+            lambda ctx: Cipher(algorithms.AES(ctx._.key), modes.CBC(ctx.iv))
+        )
+    )
+    key128 = b"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+    byts = d.build({"enc_data": {"width": 5, "height": 4}}, key=key128)
+    obj = d.parse(byts, key=key128)
+    assert obj.enc_data == Container(width=5, height=4)
+
+
 def test_rebuffered():
     data = b"0" * 1000
     assert Rebuffered(Array(1000,Byte)).parse_stream(io.BytesIO(data)) == [48]*1000
