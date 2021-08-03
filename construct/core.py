@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import struct, io, binascii, itertools, collections, pickle, sys, os, hashlib, importlib, importlib.lib
+import struct, io, binascii, itertools, collections, pickle, sys, os, hashlib, importlib, importlib.util
 
 from construct.lib import *
 from construct.expr import *
