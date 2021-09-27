@@ -1625,7 +1625,7 @@ class StringEncoded(Adapter):
         # return f"({self.subcon._compilebuild(code)}).encode({repr(self.encoding)})"
 
 
-def PaddedString(length, encoding):
+def PaddedString(length, encoding, pad=None):
     r"""
     Configurable, fixed-length or variable-length string field.
 
@@ -1635,6 +1635,7 @@ def PaddedString(length, encoding):
 
     :param length: integer or context lambda, length in bytes (not unicode characters)
     :param encoding: string like: utf8 utf16 utf32 ascii
+    :param pad: optional, bytes, padding byte-string
 
     :raises StringError: building a non-unicode string
     :raises StringError: selected encoding is not on supported list
@@ -1649,7 +1650,7 @@ def PaddedString(length, encoding):
         >>> d.parse(_)
         u'Афон'
     """
-    macro = StringEncoded(FixedSized(length, NullStripped(GreedyBytes, pad=encodingunit(encoding))), encoding)
+    macro = StringEncoded(FixedSized(length, NullStripped(GreedyBytes, pad=pad or encodingunit(encoding))), encoding)
     def _emitfulltype(ksy, bitwise):
         return dict(size=length, type="strz", encoding=encoding)
     macro._emitfulltype = _emitfulltype
