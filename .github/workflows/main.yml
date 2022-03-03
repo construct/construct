@@ -24,3 +24,20 @@ jobs:
       - name: Run tests
         run: |
           py.test tests/ --benchmark-disable --showlocals --verbose
+
+  create_wheel_and_sdist:
+    name: Build binary and source archives
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip build twine pip setuptools wheel
+      - name: Build wheel and sdist
+        run: |
+          python setup.py sdist bdist_wheel
+          twine check dist/*
+      - name: Collect built archives
+        uses: actions/upload-artifact@v2
+        with:
+          path: dist/*
