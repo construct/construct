@@ -479,7 +479,7 @@ class Construct(object):
 
     def _sizeof(self, context, path):
         """Override in your subclass."""
-        raise SizeofError(path=path)
+        raise NotImplementedError
 
     def _actualsize(self, stream, context, path):
         return self._sizeof(context, path)
