@@ -475,14 +475,20 @@ class Construct(object):
         context._building = False
         context._sizing = True
         context._params = context
-        return self._sizeof(context, "(sizeof)")
+        try:
+            return self._sizeof(context, "(sizeof)")
+        except NotImplementedError:
+            raise SizeofError(path="(sizeof)")
 
     def _sizeof(self, context, path):
         """Override in your subclass."""
         raise NotImplementedError
 
     def _actualsize(self, stream, context, path):
-        return self._sizeof(context, path)
+        try:
+            return self._sizeof(context, path)
+        except NotImplementedError:
+            raise SizeofError(path=path)
 
     def compile(self, filename=None):
         """
