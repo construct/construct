@@ -1,6 +1,7 @@
 from construct.lib.py3compat import *
 import re
 import collections
+import inspect
 
 
 globalPrintFullStrings = False
@@ -88,9 +89,18 @@ class Container(collections.OrderedDict):
     def __getattr__(self, name):
         try:
             if name in self.__slots__:
-                return object.__getattribute__(self, name)
+                ret = object.__getattribute__(self, name)
+                # the dirty inspect hack is because we do not want to resolve Lazy lambdas for backwards compatibility
+                # if we want break backwards compatibility, we can remove this hack and just add a context parameter
+                # to the Lazy execute() inline function
+                if callable(ret) and len(inspect.signature(ret).parameters) == 1:
+                    return ret(self)
+                return ret
             else:
-                return self[name]
+                ret = self[name]
+                if callable(ret) and len(inspect.signature(ret).parameters) == 1:
+                    return ret(self)
+                return ret
         except KeyError:
             raise AttributeError(name)
 

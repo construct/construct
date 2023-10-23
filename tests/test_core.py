@@ -2382,6 +2382,18 @@ def test_switch_issue_913_using_integers():
     common(d, b"\xab", 171, 1, x=1)
     common(d, b"\x09\x00", 9, 2, x=2)
 
+
+def test_lazy_rebuild():
+    d = Struct(
+        "foo" / Int32ul,
+        "bar" / Rebuild(Int32ul, lambda ctx: ctx.baz),
+        "baz" / Rebuild(Int32ul, lambda ctx: ctx.foo),
+    )
+    obj = {"foo": 4, "bar": lambda ctx: ctx.baz, "baz": lambda ctx: ctx.foo}
+    res = d.build(obj)
+    assert(res == b'\x04\x00\x00\x00\x04\x00\x00\x00\x04\x00\x00\x00')
+
+
 @xfail(reason="unfixable defect in the design")
 def test_adapters_context_issue_954():
     class IdAdapter(Adapter):
