@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import struct, io, binascii, itertools, collections, pickle, sys, os, hashlib, importlib, importlib.machinery, importlib.util
+import math, struct, io, binascii, itertools, collections, pickle, sys, os, hashlib, importlib, importlib.machinery, importlib.util
 
 from construct.lib import *
 from construct.expr import *
 from construct.version import *
-
 
 #===============================================================================
 # exceptions
@@ -3549,7 +3548,10 @@ class Hex(Adapter):
     """
     def _decode(self, obj, context, path):
         if isinstance(obj, integertypes):
-            return HexDisplayedInteger.new(obj, "0%sX" % (2 * self.subcon._sizeof(context, path)))
+            size = 2 * self.subcon._sizeof(context, path)
+            if isinstance(context._io, RestreamedBytesIO) and context._io.decoderunit == 1:
+                size = math.ceil(size / 8)
+            return HexDisplayedInteger.new(obj, "0%sX" % size)
         if isinstance(obj, bytestringtype):
             return HexDisplayedBytes(obj)
         if isinstance(obj, dict):
