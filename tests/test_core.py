@@ -331,13 +331,14 @@ def test_enum_enum36():
     common(d, b"\x02", "b", 1)
 
 def test_enum_issue_298():
-    d = Struct(
-        "ctrl" / Enum(Byte,
+    e= Enum(Byte,
             NAK = 0x15,
             STX = 0x02,
-        ),
+        )
+    d = Struct(
+        "ctrl" / e,
         Probe(),
-        "optional" / If(lambda this: this.ctrl == "NAK", Byte),
+        "optional" / If(lambda this: (this["ctrl"] == e.NAK), Byte),
     )
     common(d, b"\x15\xff", Container(ctrl='NAK', optional=255))
     common(d, b"\x02", Container(ctrl='STX', optional=None))
@@ -367,11 +368,11 @@ def test_enum_issue_677():
     assert isinstance(d.parse(b"\x01"), EnumIntegerString)
 
     d = Struct("e" / Enum(Byte, one=1))
-    assert str(d.parse(b"\x01")) == 'Container: \n    e = (enum) one 1'
-    assert str(d.parse(b"\xff")) == 'Container: \n    e = (enum) (unknown) 255'
+    assert (d.parse(b"\x01"))["e"] == 1
+    assert (d.parse(b"\xff"))["e"] == 255
     d = Struct("e" / Enum(Byte, one=1)).compile()
-    assert str(d.parse(b"\x01")) == 'Container: \n    e = (enum) one 1'
-    assert str(d.parse(b"\xff")) == 'Container: \n    e = (enum) (unknown) 255'
+    assert (d.parse(b"\x01"))["e"] == 1
+    assert (d.parse(b"\xff"))["e"] == 255
 
 @xfail(reason="Cannot implement this in EnumIntegerString.")
 def test_enum_issue_992():
@@ -385,6 +386,29 @@ def test_enum_issue_992():
     assert x == E.a
     x = d.parse(b"\x02")
     assert x == F.b
+
+
+def test_optional_pascal_string():
+    d = Struct("opt"/Optional(PascalString(Byte, "ascii")))
+    dc = d.compile()
+    for blob in [b"\x01a", b""]:
+        assert d.parse(blob) == dc.parse(blob)
+        assert d.build(dc.parse(blob)) == blob
+        assert dc.build(d.parse(blob)) == blob
+        assert dc.build(dc.parse(blob)) == blob
+        assert d.build(d.parse(blob)) == blob
+
+    for blob in  [b"\x01", b"\x01\xff"]:
+        assert d.parse(blob) == Container(opt=None)
+        assert dc.parse(blob) == Container(opt=None)
+    assert dc.parse(b"\x03abc") == Container(opt="abc")
+
+    d = Struct("opt1"/Optional(PascalString(Byte, "ascii")),
+               "opt2"/Optional(Int32ul))
+    dc = d.compile()
+    for blob in  [b"\x0111234", b"\x01\xff12"]:
+        assert d.parse(blob) == dc.parse(blob)
+
 
 def test_flagsenum():
     d = FlagsEnum(Byte, one=1, two=2, four=4, eight=8)
@@ -641,6 +665,18 @@ def test_rebuild_issue_664():
     # no asserts are needed
     d.build(obj)
 
+
+def test_rebuild_custom_function():
+    def getlen(this):
+        return 2
+
+    template = Struct(      "count" / Rebuild(Byte, getlen), "my_items" / Byte[this.count])
+    for d  in [template, template.compile()]:
+        assert d.parse(b"\x02ab") == Container(count=2, my_items=[97,98])
+        assert d.build(dict(count=None,my_items=[255,255])) == b"\x02\xff\xff"
+        assert d.build(dict(count=2,my_items=[255,255])) == b"\x02\xff\xff"
+        assert d.build(dict(my_items=[255,255])) == b"\x02\xff\xff"
+
 def test_default():
     d = Default(Byte, 0)
     common(d, b"\xff", 255, 1)
@@ -866,6 +902,10 @@ def test_if():
 def test_ifthenelse():
     common(IfThenElse(True,  Int8ub, Int16ub), b"\x01", 1, 1)
     common(IfThenElse(False, Int8ub, Int16ub), b"\x00\x01", 1, 2)
+    stimulus_with_user_function = IfThenElse(lambda _: False, Int8ub, Int16ub)
+    for d in [stimulus_with_user_function, stimulus_with_user_function.compile()]:
+        common(d, b"\x00\x01", 1, 2)
+
 
 def test_switch():
     d = Switch(this.x, {1:Int8ub, 2:Int16ub, 4:Int32ub})
@@ -876,8 +916,18 @@ def test_switch():
     assert raises(d.sizeof) == SizeofError
     assert raises(d.sizeof, x=1) == 1
 
+    dStencil = Switch(lambda this: this["x"], {1:Int8ub, 2:Int16ub, 4:Int32ub})
+    for d in [dStencil, dStencil.compile()]:
+        common(d, b"\x01", 0x01, 1, x=1)
+        common(d, b"\x01\x02", 0x0102, 2, x=2)
+        assert d.parse(b"", x=255) == None
+        assert d.build(None, x=255) == b""
+        assert raises(d.sizeof) == SizeofError
+        assert raises(d.sizeof, x=1) == 1
+
     d = Switch(this.x, {}, default=Byte)
     common(d, b"\x01", 1, 1, x=255)
+    
 
 def test_switch_issue_357():
     inner = Struct(

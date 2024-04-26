@@ -174,7 +174,7 @@ example = Struct(
     # "repeatuntil2" / RepeatUntil(list_ == [0], Byte),
     # "repeatuntil3" / RepeatUntil(obj_ == 0, Byte),
 )
-exampledata = bytes(1000)
+exampledata = bytes(10000)
 
 
 def test_compiled_example_benchmark():
