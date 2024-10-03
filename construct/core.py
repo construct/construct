@@ -5578,6 +5578,46 @@ class Checksum(Construct):
     def _sizeof(self, context, path):
         return self.checksumfield._sizeof(context, path)
 
+    def _emitparse(self, code):
+        fname = f"parse_select_{code.allocateId()}"
+
+        block = f"""
+            def {fname}(io, this):
+                fallback = io.tell()
+        """
+        for sc in self.subcons:
+                cb = sc._compileparse(code)
+                if cb == "None":
+                    block += """
+                return None
+                """
+                else:
+                    block += f"""
+                try:
+                    return {cb}
+                except ExplicitError:
+                    raise
+                except Exception:
+                    io.seek(fallback)
+                """
+        code.append(block)
+        return "%s(io, this)" % (fname,)
+
+    def _emitbuild(self, code):
+        fname = f"build_select_{code.allocateId()}"
+
+        block = f"""
+            def {fname}(obj, io, this):
+        """
+        for sc in self.subcons:
+            block += f"""
+                try:
+                    return {sc._compilebuild(code)}
+                except:
+                    pass
+            """
+        code.append(block)
+        return "%s(obj, io, this)" % (fname,)
 
 class Compressed(Tunnel):
     r"""
