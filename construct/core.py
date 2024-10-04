@@ -4727,6 +4727,17 @@ class Terminated(Construct):
         if stream.read(1):
             raise TerminatedError("expected end of stream", path=path)
 
+    def _emitparse(self, code):
+        code.append("""
+        def Terminated(io):
+            if io.read(1):
+                raise TerminatedError("expected end of stream")
+        """)
+        return "Terminated(io)"
+
+    def _emitbuild(self, code):
+        return "None"
+
     def _build(self, obj, stream, context, path):
         return obj
 
