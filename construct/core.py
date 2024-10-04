@@ -1646,6 +1646,39 @@ class VarInt(Construct):
     def _emitprimitivetype(self, ksy, bitwise):
         return "vlq_base128_le"
 
+    def _emitparse(self, code):
+        code.append("""
+        def parse_varint(io):
+            acc = []
+            while True:
+                b = byte2int(io.read(1))
+                acc.append(b & 0b01111111)
+                if b & 0b10000000 == 0:
+                    break
+            num = 0
+            for b in reversed(acc):
+                num = (num << 7) | b
+            return num
+        """)
+        return "parse_varint(io)"
+
+    def _emitbuild(self, code):
+        code.append("""
+        def build_varint(io, obj):
+            if not isinstance(obj, int):
+                raise IntegerError(f"value {obj} is not an integer", path=path)
+            if obj < 0:
+                raise IntegerError(f"VarInt cannot build from negative number {obj}", path=path)
+            x = obj
+            B = bytearray()
+            while x > 0b01111111:
+                B.append(0b10000000 | (x & 0b01111111))
+                x >>= 7
+            B.append(x)
+            io.write(bytes(B))
+            return obj
+        """)
+        return "build_varint(io, obj)"
 
 @singleton
 class ZigZag(Construct):
