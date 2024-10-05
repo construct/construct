@@ -3345,6 +3345,20 @@ class Pickled(Construct):
         pickle.dump(obj, stream)
         return obj
 
+    def _emitparse(self, code):
+        "factory_%s" % code.allocateId()
+        code.append("""
+            import pickle
+                    """)
+        return "pickle.load(io)"
+
+    def _emitbuild(self, code):
+        "factory_%s" % code.allocateId()
+        code.append("""
+            import pickle
+                    """)
+        return "pickle.dump(obj, io)"
+
 
 @singleton
 class Numpy(Construct):
