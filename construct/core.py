@@ -5148,6 +5148,21 @@ class NullStripped(Subconstruct):
     def _build(self, obj, stream, context, path):
         return self.subcon._build(obj, stream, context, path)
 
+    def _emitparse(self, code):
+        aid = code.allocateId()
+        if len(self.pad) != 1:
+            raise NotImplementedError
+        code.append(f"""
+        def parse_nullstripped_{aid}(io):
+            from io import BytesIO
+            io = BytesIO(io.read().rstrip({repr(self.pad)}))
+            return {self.subcon._compileparse(code)}
+        """)
+        return f"parse_nullstripped_{aid}(io)"
+
+    def _emitbuild(self, code):
+        return self.subcon._emitbuild(code)
+
     def _sizeof(self, context, path):
         raise SizeofError(path=path)
 
