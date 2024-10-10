@@ -21,7 +21,7 @@ setup(
     },
     author = "Arkadiusz Bulski, Tomer Filiba, Corbin Simpson",
     author_email = "arek.bulski@gmail.com, tomerfiliba@gmail.com, MostAwesomeDude@gmail.com",
-    python_requires = ">=3.8",
+    python_requires = ">=3.9",
     install_requires = [],
     extras_require = {
         "extras": [

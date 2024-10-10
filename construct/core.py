@@ -5,6 +5,24 @@ import struct, io, binascii, itertools, collections, pickle, sys, os, hashlib, i
 from construct.lib import *
 from construct.expr import *
 from construct.version import *
+import logging
+
+def _emit_function_expression_or_const(code, func, parameters="this"):
+    if isinstance(func, ExprMixin) or (not callable(func)):
+        return repr(func)
+    else:
+        aid = code.allocateId()
+        code.userfunction[aid] = func
+        return f"userfunction[{aid}]({parameters})"
+
+def _emit_source_or_use_linked(code, obj):
+    try:
+        if eval(repr(obj)) == obj:
+            return repr(obj)
+    except Exception as _:
+        aid = code.allocateId()
+        code.userfunction[aid] = obj
+        return f"userfunction[{aid}]"
 
 
 #===============================================================================
@@ -980,7 +998,7 @@ class Bytes(Construct):
             raise SizeofError("cannot calculate size, key not found in context", path=path)
 
     def _emitparse(self, code):
-        return f"io.read({self.length})"
+        return f"io.read({_emit_function_expression_or_const(code, self.length)})"
 
     def _emitbuild(self, code):
         return f"(io.write(obj), obj)[1]"
@@ -1916,6 +1934,17 @@ class EnumIntegerString(str):
         ret.intvalue = intvalue
         return ret
 
+    def __eq__(self, other):
+        if isinstance(other, int):
+            return (self.intvalue == other)
+        elif isinstance(other, type(self)):
+            return (self.intvalue == other.intvalue)
+        elif isinstance(other, str):
+            return str(self) == other
+        raise NotImplementedError(f"Cont compare {type(self)} to {type(other)} {other}")
+
+    def __hash__(self):
+        return self.intvalue
 
 class Enum(Adapter):
     r"""
@@ -1966,9 +1995,12 @@ class Enum(Adapter):
         for enum in merge:
             for enumentry in enum:
                 mapping[enumentry.name] = enumentry.value
-        self.encmapping = {EnumIntegerString.new(v,k):v for k,v in mapping.items()}
-        self.decmapping = {v:EnumIntegerString.new(v,k) for k,v in mapping.items()}
-        self.ksymapping = {v:k for k,v in mapping.items()}
+        encmappingFromNames  = {k:v for k, v in mapping.items()}
+        encmappingFromValues = {v:v for _, v in mapping.items()}
+
+        self.encmapping = {**encmappingFromNames, **encmappingFromValues}
+        self.decmapping = {v:EnumIntegerString.new(v,k) for k, v in mapping.items()}
+        self.ksymapping = {v:k for k, v in mapping.items()}
 
     def __getattr__(self, name):
         if name in self.encmapping:
@@ -1981,6 +2013,9 @@ class Enum(Adapter):
         except KeyError:
             return EnumInteger(obj)
 
+    def _emitdecode(self, code):
+        return f"{_emit_source_or_use_linked(self.decmapping)}.get(obj, EnumInteger(obj))"
+
     def _encode(self, obj, context, path):
         try:
             if isinstance(obj, int):
@@ -1989,21 +2024,13 @@ class Enum(Adapter):
         except KeyError:
             raise MappingError("building failed, no mapping for %r" % (obj,), path=path)
 
-    def _emitparse(self, code):
-        fname = f"factory_{code.allocateId()}"
-        code.append(f"{fname} = {repr(self.decmapping)}")
-        return f"reuse(({self.subcon._compileparse(code)}), lambda x: {fname}.get(x, EnumInteger(x)))"
-
-    def _emitbuild(self, code):
-        fname = f"factory_{code.allocateId()}"
-        code.append(f"{fname} = {repr(self.encmapping)}")
-        return f"reuse({fname}.get(obj, obj), lambda obj: ({self.subcon._compilebuild(code)}))"
+    def _emitencode(self, code):
+        return f"{_emit_source_or_use_linked(self.encmapping)}.get(obj, EnumInteger(obj))"
 
     def _emitprimitivetype(self, ksy, bitwise):
         name = "enum_%s" % ksy.allocateId()
         ksy.enums[name] = self.ksymapping
         return name
-
 
 class BitwisableString(str):
     """Used internally."""
@@ -2096,9 +2123,6 @@ class FlagsEnum(Adapter):
         except KeyError:
             raise MappingError("building failed, unknown label: %r" % (obj,), path=path)
 
-    def _emitparse(self, code):
-        return f"reuse(({self.subcon._compileparse(code)}), lambda x: Container({', '.join(f'{k}=bool(x & {v} == {v})' for k,v in self.flags.items()) }))"
-
     def _emitseq(self, ksy, bitwise):
         bitstotal = self.subcon.sizeof() * 8
         seq = []
@@ -2145,15 +2169,11 @@ class Mapping(Adapter):
         except (KeyError, TypeError):
             raise MappingError("building failed, no encoding mapping for %r" % (obj,), path=path)
 
-    def _emitparse(self, code):
-        fname = f"factory_{code.allocateId()}"
-        code.append(f"{fname} = {repr(self.decmapping)}")
-        return f"{fname}[{self.subcon._compileparse(code)}]"
+    def _emitdecode(self, code):
+        return f"{_emit_source_or_use_linked(code, self.decmapping)}[obj]"
 
-    def _emitbuild(self, code):
-        fname = f"factory_{code.allocateId()}"
-        code.append(f"{fname} = {repr(self.encmapping)}")
-        return f"reuse({fname}[obj], lambda obj: ({self.subcon._compilebuild(code)}))"
+    def _emitencode(self, code):
+        return f"{_emit_source_or_use_linked(code, self.encmapping)}[obj]"
 
 
 #===============================================================================
@@ -2924,10 +2944,10 @@ class Computed(Construct):
         return 0
 
     def _emitparse(self, code):
-        return repr(self.func)
+        return _emit_function_expression_or_const(code, self.func)
 
     def _emitbuild(self, code):
-        return repr(self.func)
+        return _emit_function_expression_or_const(code, self.func)
 
 
 @singleton
@@ -3119,14 +3139,14 @@ class Check(Construct):
             def parse_check(condition):
                 if not condition: raise CheckError
         """)
-        return f"parse_check({repr(self.func)})"
+        return f"parse_check({_emit_function_expression_or_const(code, self.func)})"
 
     def _emitbuild(self, code):
         code.append(f"""
             def build_check(condition):
                 if not condition: raise CheckError
         """)
-        return f"build_check({repr(self.func)})"
+        return f"build_check({_emit_function_expression_or_const(code, self.func)})"
 
 
 @singleton
@@ -3987,10 +4007,10 @@ class IfThenElse(Construct):
         return sc._sizeof(context, path)
 
     def _emitparse(self, code):
-        return "((%s) if (%s) else (%s))" % (self.thensubcon._compileparse(code), self.condfunc, self.elsesubcon._compileparse(code), )
+        return "((%s) if (%s) else (%s))" % (self.thensubcon._compileparse(code), _emit_function_expression_or_const(code, self.condfunc), self.elsesubcon._compileparse(code), )
 
     def _emitbuild(self, code):
-        return f"(({self.thensubcon._compilebuild(code)}) if ({repr(self.condfunc)}) else ({self.elsesubcon._compilebuild(code)}))"
+        return f"(({self.thensubcon._compilebuild(code)}) if ({_emit_function_expression_or_const(code, self.condfunc)}) else ({self.elsesubcon._compilebuild(code)}))"
 
     def _emitseq(self, ksy, bitwise):
         return [
@@ -4060,20 +4080,30 @@ class Switch(Construct):
     def _emitparse(self, code):
         fname = f"switch_cases_{code.allocateId()}"
         code.append(f"{fname} = {{}}")
+        selector = ""
         for key,sc in self.cases.items():
-            code.append(f"{fname}[{repr(key)}] = lambda io,this: {sc._compileparse(code)}")
+            if isinstance(key, EnumIntegerString):
+                selector = ".intvalue"
+                code.append(f"{fname}[{int(key)}] = lambda io,this: {sc._compileparse(code)}")
+            else:
+                code.append(f"{fname}[{_emit_source_or_use_linked(code, key)}] = lambda io,this: {sc._compileparse(code)}")
         defaultfname = f"switch_defaultcase_{code.allocateId()}"
         code.append(f"{defaultfname} = lambda io,this: {self.default._compileparse(code)}")
-        return f"{fname}.get({repr(self.keyfunc)}, {defaultfname})(io, this)"
+        return f"{fname}.get({_emit_source_or_use_linked(code, self.keyfunc)}{selector}, {defaultfname})(io, this)"
 
     def _emitbuild(self, code):
         fname = f"switch_cases_{code.allocateId()}"
         code.append(f"{fname} = {{}}")
+        selector = ""
         for key,sc in self.cases.items():
-            code.append(f"{fname}[{repr(key)}] = lambda obj,io,this: {sc._compilebuild(code)}")
+            if isinstance(key, EnumIntegerString):
+                selector = ".intvalue"
+                code.append(f"{fname}[{int(key)}] = lambda obj,io,this: {sc._compilebuild(code)}")
+            else:
+                code.append(f"{fname}[{_emit_source_or_use_linked(code, key)}] = lambda obj,io,this: {sc._compilebuild(code)}")
         defaultfname = f"switch_defaultcase_{code.allocateId()}"
         code.append(f"{defaultfname} = lambda obj,io,this: {self.default._compilebuild(code)}")
-        return f"{fname}.get({repr(self.keyfunc)}, {defaultfname})(obj, io, this)"
+        return f"{fname}.get({_emit_source_or_use_linked(code, self.keyfunc)}{selector}, {defaultfname})(obj, io, this)"
 
 
 class StopIf(Construct):
@@ -4249,9 +4279,11 @@ class Padded(Subconstruct):
             raise SizeofError("cannot calculate size, key not found in context", path=path)
 
     def _emitparse(self, code):
+        assert isinstance(self.length, int), "Padding needs to be known at compile time"
         return f"({self.subcon._compileparse(code)}, io.read(({self.length})-({self.subcon.sizeof()}) ))[0]"
 
     def _emitbuild(self, code):
+        assert isinstance(self.length, int), "Padding needs to be known at compile time"
         return f"({self.subcon._compilebuild(code)}, io.write({repr(self.pattern)}*(({self.length})-({self.subcon.sizeof()})) ))[0]"
 
     def _emitfulltype(self, ksy, bitwise):
@@ -4442,7 +4474,7 @@ class Pointer(Subconstruct):
                 io.seek(fallback)
                 return obj
         """)
-        return f"parse_pointer(io, {self.offset}, lambda: {self.subcon._compileparse(code)})"
+        return f"parse_pointer(io, {_emit_function_expression_or_const(code, self.offset)}, lambda: {self.subcon._compileparse(code)})"
 
     def _emitbuild(self, code):
         code.append(f"""
@@ -4453,7 +4485,7 @@ class Pointer(Subconstruct):
                 io.seek(fallback)
                 return ret
         """)
-        return f"build_pointer(obj, io, {self.offset}, lambda: {self.subcon._compilebuild(code)})"
+        return f"build_pointer(obj, io, {_emit_function_expression_or_const(code, self.offset)}, lambda: {self.subcon._compilebuild(code)})"
 
     def _emitprimitivetype(self, ksy, bitwise):
         offset = self.offset.__getfield__() if callable(self.offset) else self.offset
