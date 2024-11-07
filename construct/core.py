@@ -212,7 +212,7 @@ def stream_tell(stream, path):
     try:
         return stream.tell()
     except Exception:
-        raise StreamError("stream.tell() failed", path=path)
+        return None
 
 
 def stream_size(stream):
