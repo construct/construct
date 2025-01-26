@@ -969,6 +969,27 @@ def test_pointer():
     )
     assert d.parse(bytes(20)) == Container(inner=Container(), x=0)
 
+    d = Struct (
+        'dummy' / Byte,
+        'pointer' / Pointer(1, Byte, relativeOffset=True),
+    )
+
+    common(d, b"\xde\x00\xad", Container(dummy=0xde, pointer=0xad), 1)
+
+    d = Struct (
+        'dummy' / Byte,
+        'pointer' / Pointer(0, Byte, relativeOffset=True),
+    )
+
+    common(d, b"\xde\xad", Container(dummy=0xde, pointer=0xad), 1)
+
+    d = Struct (
+        'dummy' / Byte,
+        'pointer' / Pointer(-1, Byte, relativeOffset=True),
+    )
+
+    common(d, b"\xde", Container(dummy=0xde, pointer=0xde), 1)
+
 def test_peek():
     d = Peek(Int8ub)
     assert d.parse(b"\x01") == 1
