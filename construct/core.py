@@ -4387,11 +4387,12 @@ class Pointer(Subconstruct):
 
     Parsing and building seeks the stream to new location, processes subcon, and seeks back to original location. Size is defined as 0 but that does not mean no bytes are written into the stream.
 
-    Offset can be positive, indicating a position from stream beginning forward, or negative, indicating a position from EOF backwards.
+    Offset can be positive, indicating a position from stream beginning forward, or negative, indicating a position from EOF backwards. Alternatively the offset can be interpreted as relative to the current stream position.
 
     :param offset: integer or context lambda, positive or negative
     :param subcon: Construct instance
     :param stream: None to use original stream (default), or context lambda to provide a different stream
+    :param relativeOffset: True to interpret the offset as relative to the current stream position
 
     :raises StreamError: requested reading negative amount, could not read enough bytes, requested writing different amount than actual data, or could not write all bytes
     :raises StreamError: stream is not seekable and tellable
@@ -4407,25 +4408,31 @@ class Pointer(Subconstruct):
         b'\x00\x00\x00\x00\x00\x00\x00\x00Z'
     """
 
-    def __init__(self, offset, subcon, stream=None):
+    def __init__(self, offset, subcon, stream=None, relativeOffset=False):
         super().__init__(subcon)
         self.offset = offset
         self.stream = stream
+        self.relativeOffset = relativeOffset
 
-    def _parse(self, stream, context, path):
+    def _pointer_seek(self, stream, context, path):
         offset = evaluate(self.offset, context)
         stream = evaluate(self.stream, context) or stream
         fallback = stream_tell(stream, path)
-        stream_seek(stream, offset, 2 if offset < 0 else 0, path)
+        if self.relativeOffset:
+            stream_seek(stream, offset, 1, path)
+        else:
+            stream_seek(stream, offset, 2 if offset < 0 else 0, path)
+
+        return fallback
+
+    def _parse(self, stream, context, path):
+        fallback = self._pointer_seek(stream, context, path)
         obj = self.subcon._parsereport(stream, context, path)
         stream_seek(stream, fallback, 0, path)
         return obj
 
     def _build(self, obj, stream, context, path):
-        offset = evaluate(self.offset, context)
-        stream = evaluate(self.stream, context) or stream
-        fallback = stream_tell(stream, path)
-        stream_seek(stream, offset, 2 if offset < 0 else 0, path)
+        fallback = self._pointer_seek(stream, context, path)
         buildret = self.subcon._build(obj, stream, context, path)
         stream_seek(stream, fallback, 0, path)
         return buildret
@@ -4434,26 +4441,40 @@ class Pointer(Subconstruct):
         return 0
 
     def _emitparse(self, code):
+        if self.relativeOffset:
+            func_name = "parse_relative_pointer"
+            seek_args = "1"
+        else:
+            func_name = "parse_pointer"
+            seek_args = "2 if offset < 0 else 0"
+
         code.append(f"""
-            def parse_pointer(io, offset, func):
+            def {func_name}(io, offset, func):
                 fallback = io.tell()
-                io.seek(offset, 2 if offset < 0 else 0)
+                io.seek(offset, {seek_args})
                 obj = func()
                 io.seek(fallback)
                 return obj
         """)
-        return f"parse_pointer(io, {self.offset}, lambda: {self.subcon._compileparse(code)})"
+        return f"{func_name}(io, {self.offset}, lambda: {self.subcon._compileparse(code)})"
 
     def _emitbuild(self, code):
+        if self.relativeOffset:
+            func_name = "build_relative_pointer"
+            seek_args = "1"
+        else:
+            func_name = "build_pointer"
+            seek_args = "2 if offset < 0 else 0"
+
         code.append(f"""
-            def build_pointer(obj, io, offset, func):
+            def {func_name}(obj, io, offset, func):
                 fallback = io.tell()
-                io.seek(offset, 2 if offset < 0 else 0)
+                io.seek(offset, {seek_args})
                 ret = func()
                 io.seek(fallback)
                 return ret
         """)
-        return f"build_pointer(obj, io, {self.offset}, lambda: {self.subcon._compilebuild(code)})"
+        return f"{func_name}(obj, io, {self.offset}, lambda: {self.subcon._compilebuild(code)})"
 
     def _emitprimitivetype(self, ksy, bitwise):
         offset = self.offset.__getfield__() if callable(self.offset) else self.offset
