@@ -212,7 +212,7 @@ def stream_tell(stream, path):
     try:
         return stream.tell()
     except Exception:
-        raise StreamError("stream.tell() failed", path=path)
+        return None
 
 
 def stream_size(stream):
@@ -238,9 +238,12 @@ def stream_iseof(stream):
 class BytesIOWithOffsets(io.BytesIO):
     @staticmethod
     def from_reading(stream, length: int, path: str):
-        offset = stream_tell(stream, path)
-        contents = stream_read(stream, length, path)
-        return BytesIOWithOffsets(contents, stream, offset)
+        try:
+            offset = stream_tell(stream, path)
+            contents = stream_read(stream, length, path)
+            return BytesIOWithOffsets(contents, stream, offset)
+        except (io.UnsupportedOperation, StreamError):
+            return io.BytesIO(stream_read(stream, length, path))
 
     def __init__(self, contents: bytes, parent_stream, offset: int):
         super().__init__(contents)
