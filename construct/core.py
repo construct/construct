@@ -833,6 +833,26 @@ class Adapter(Subconstruct):
     def _encode(self, obj, context, path):
         raise NotImplementedError
 
+    def _emitbuild(self, code):
+        aid = code.allocateId()
+        code.append(f"""
+        def adapter_{aid}(obj, io):
+            obj = {self._emitencode(code)}
+            this = Container({{'_params':None}})
+            return {self.subcon._compilebuild(code)}
+""")
+        return f"adapter_{aid}(obj, io)"
+
+    def _emitparse(self, code):
+        aid = code.allocateId()
+        code.append(f"""
+        def adapter_{aid}(io, this):
+            obj = {self.subcon._compileparse(code)}
+            obj = {self._emitdecode(code)}
+            return obj
+""")
+        return f"adapter_{aid}(io, this)"
+
 
 class SymmetricAdapter(Adapter):
     r"""
@@ -983,7 +1003,7 @@ class Bytes(Construct):
         return f"io.read({self.length})"
 
     def _emitbuild(self, code):
-        return f"(io.write(obj), obj)[1]"
+        return f"[io.write(obj), obj][1]"
 
     def _emitfulltype(self, ksy, bitwise):
         return dict(size=self.length)
@@ -1733,15 +1753,11 @@ class StringEncoded(Adapter):
         except:
             raise StringError(f"cannot use encoding {self.encoding!r} to encode {obj!r}")
 
-    def _emitparse(self, code):
-        raise NotImplementedError
-        # Not sure what the correct implementation would be.
-        # return f"({self.subcon._compileparse(code)}).decode({repr(self.encoding)})"
+    def _emitencode(self, code):
+        return f"obj.encode({repr(self.encoding)}) if len(obj) > 0 else b''"
 
-    def _emitbuild(self, code):
-        raise NotImplementedError
-        # This is not a valid implementation. obj.encode() should be inserted into subcon
-        # return f"({self.subcon._compilebuild(code)}).encode({repr(self.encoding)})"
+    def _emitdecode(self, code):
+        return f"obj.decode({repr(self.encoding)})"
 
 
 def PaddedString(length, encoding):
@@ -1989,15 +2005,21 @@ class Enum(Adapter):
         except KeyError:
             raise MappingError("building failed, no mapping for %r" % (obj,), path=path)
 
-    def _emitparse(self, code):
-        fname = f"factory_{code.allocateId()}"
-        code.append(f"{fname} = {repr(self.decmapping)}")
-        return f"reuse(({self.subcon._compileparse(code)}), lambda x: {fname}.get(x, EnumInteger(x)))"
+    def _emitencode(self, code):
+        fname = f"encode_enum_{code.allocateId()}"
+        code.append(f"""
+            def {fname}(obj):
+                return {repr(self.encmapping)}.get(obj, obj)
+        """)
+        return f"{fname}(obj)"
 
-    def _emitbuild(self, code):
-        fname = f"factory_{code.allocateId()}"
-        code.append(f"{fname} = {repr(self.encmapping)}")
-        return f"reuse({fname}.get(obj, obj), lambda obj: ({self.subcon._compilebuild(code)}))"
+    def _emitdecode(self, code):
+        fname = f"decode_enum_{code.allocateId()}"
+        code.append(f"""
+            def {fname}(obj):
+                return {repr(self.decmapping)}.get(obj, EnumInteger(obj))
+        """)
+        return f"{fname}(obj)"
 
     def _emitprimitivetype(self, ksy, bitwise):
         name = "enum_%s" % ksy.allocateId()
@@ -2108,6 +2130,12 @@ class FlagsEnum(Adapter):
             seq.append(dict(id=name, type="b1", doc=hex(value), _construct_render="Flag"))
         return seq
 
+    def _emitdecode(self, code):
+        raise NotImplementedError
+
+    def _emitencode(self, code):
+        raise NotImplementedError
+
 
 class Mapping(Adapter):
     r"""
@@ -2145,16 +2173,15 @@ class Mapping(Adapter):
         except (KeyError, TypeError):
             raise MappingError("building failed, no encoding mapping for %r" % (obj,), path=path)
 
-    def _emitparse(self, code):
-        fname = f"factory_{code.allocateId()}"
-        code.append(f"{fname} = {repr(self.decmapping)}")
-        return f"{fname}[{self.subcon._compileparse(code)}]"
+    def _emitdecode(self, code):
+        aid = code.allocateId()
+        code.userfunction[aid] = self.decmapping
+        return f"userfunction[{aid}][obj]"
 
-    def _emitbuild(self, code):
-        fname = f"factory_{code.allocateId()}"
-        code.append(f"{fname} = {repr(self.encmapping)}")
-        return f"reuse({fname}[obj], lambda obj: ({self.subcon._compilebuild(code)}))"
-
+    def _emitencode(self, code):
+        aid = code.allocateId()
+        code.userfunction[aid] = self.encmapping
+        return f"userfunction[{aid}][obj]"
 
 #===============================================================================
 # structures and sequences
@@ -3417,6 +3444,17 @@ class NamedTuple(Adapter):
         if isinstance(self.subcon, (Sequence,Array,GreedyRange)):
             return self.factory(*obj)
         raise NamedTupleError("subcon is neither Struct Sequence Array GreedyRangeGreedyRange", path=path)
+    
+    def _emitdecode(self, code):
+        factory_name = f"factory_{code.allocateId()}"
+        code.append(f"{factory_name} = collections.namedtuple({repr(self.tuplename)}, {repr(self.tuplefields)})")
+        
+        if isinstance(self.subcon, Struct):
+            return factory_name + "(**{name: value for name, value in obj.items() if name != '_io'})"
+        if isinstance(self.subcon, (Sequence,Array,GreedyRange)):
+            return f"{factory_name}(*obj)"
+        raise NamedTupleError("subcon is neither Struct Sequence Array GreedyRangeGreedyRange", path=path)
+
 
     def _encode(self, obj, context, path):
         if isinstance(self.subcon, Struct):
@@ -3424,16 +3462,12 @@ class NamedTuple(Adapter):
         if isinstance(self.subcon, (Sequence,Array,GreedyRange)):
             return list(obj)
         raise NamedTupleError("subcon is neither Struct Sequence Array GreedyRange", path=path)
-
-    def _emitparse(self, code):
-        fname = "factory_%s" % code.allocateId()
-        code.append("""
-            %s = collections.namedtuple(%r, %r)
-        """ % (fname, self.tuplename, self.tuplefields, ))
+    
+    def _emitencode(self, code):
         if isinstance(self.subcon, Struct):
-            return "%s(**(%s))" % (fname, self.subcon._compileparse(code), )
+            return "Container({" + ", ".join((f"'{sc.name}':getattr(obj,'{sc.name}')" for sc in self.subcon.subcons if sc.name)) + "})"
         if isinstance(self.subcon, (Sequence,Array,GreedyRange)):
-            return "%s(*(%s))" % (fname, self.subcon._compileparse(code), )
+            return "list(obj)"
         raise NamedTupleError("subcon is neither Struct Sequence Array GreedyRange")
 
     def _emitseq(self, ksy, bitwise):
@@ -3499,6 +3533,10 @@ def Timestamp(subcon, unit, epoch):
             def _encode(self, obj, context, path):
                 t = obj.timetuple()
                 return Container(year=t.tm_year-1980, month=t.tm_mon, day=t.tm_mday, hour=t.tm_hour, minute=t.tm_min, second=t.tm_sec//2)
+            def _emitdecode(self, code):
+                raise NotImplementedError
+            def _emitencode(self, code):
+                raise NotImplementedError
         macro = MsdosTimestampAdapter(st)
 
     else:
@@ -3509,6 +3547,10 @@ def Timestamp(subcon, unit, epoch):
                 return epoch.shift(seconds=obj*unit)
             def _encode(self, obj, context, path):
                 return int((obj-epoch).total_seconds()/unit)
+            def _emitdecode(self, code):
+                raise NotImplementedError
+            def _emitencode(self, code):
+                raise NotImplementedError
         macro = EpochTimestampAdapter(subcon)
 
     def _emitfulltype(ksy, bitwise):
@@ -3567,9 +3609,6 @@ class Hex(Adapter):
     def _encode(self, obj, context, path):
         return obj
 
-    def _emitparse(self, code):
-        return self.subcon._compileparse(code)
-
     def _emitseq(self, ksy, bitwise):
         return self.subcon._compileseq(ksy, bitwise)
 
@@ -3578,6 +3617,29 @@ class Hex(Adapter):
 
     def _emitfulltype(self, ksy, bitwise):
         return self.subcon._compilefulltype(ksy, bitwise)
+
+    def _emitdecode(self, code):
+        aid = code.allocateId()
+        intlen = 0
+        try:
+            intlen = 2*self.subcon._sizeof(None, None)
+        except Exception as _:
+            pass
+        code.append(f"""
+        from construct import HexDisplayedInteger
+        def HexDisplayedInteger_{aid}_decode(obj):
+            if isinstance(obj, int):
+                return HexDisplayedInteger.new(obj, "0{intlen}X")
+            if isinstance(obj, bytes):
+                return HexDisplayedBytes(obj)
+            if isinstance(obj, dict):
+                return HexDisplayedDict(obj)
+            return obj
+        """)
+        return f"HexDisplayedInteger_{aid}_decode(obj)"
+
+    def _emitencode(self, code):
+        return "obj"
 
 
 class HexDump(Adapter):
@@ -3633,6 +3695,12 @@ class HexDump(Adapter):
 
     def _emitfulltype(self, ksy, bitwise):
         return self.subcon._compilefulltype(ksy, bitwise)
+
+    def _emitdecode(self, code):
+        raise NotImplementedError
+
+    def _emitencode(self, code):
+        raise NotImplementedError
 
 
 #===============================================================================
@@ -4924,6 +4992,23 @@ class Prefixed(Subconstruct):
         sub = self.lengthfield.sizeof() if self.includelength else 0
         return f"restream(io.read(({self.lengthfield._compileparse(code)})-({sub})), lambda io: ({self.subcon._compileparse(code)}))"
 
+    def _emitbuild(self, code):
+        aid = code.allocateId()
+        code.append(f"""
+        def PrefixedBuild_{aid}(obj_, io_):
+            from io import BytesIO
+            io = BytesIO()
+            obj = obj_
+            {self.subcon._compilebuild(code)}
+            _data = io.getvalue()
+            obj = len(_data)
+            io = io_
+            {self.lengthfield._compilebuild(code)}
+            io.write(_data)
+            return obj_
+        """)
+        return f"PrefixedBuild_{aid}(obj, io)"
+
     def _emitseq(self, ksy, bitwise):
         return [
             dict(id="lengthfield", type=self.lengthfield._compileprimitivetype(ksy, bitwise)), 
@@ -5043,6 +5128,21 @@ class FixedSized(Subconstruct):
     def _emitparse(self, code):
         return f"restream(io.read({self.length}), lambda io: ({self.subcon._compileparse(code)}))"
 
+    def _emitbuild(self, code):
+        aid = code.allocateId()
+        code.append(f"""
+        def FixedSizeBuild_{aid}(obj, io_):
+            from io import BytesIO
+            io = BytesIO()
+            {self.subcon._compilebuild(code)}
+            _buf = io.getvalue()
+            pad = {self.length} - len(_buf)
+            assert pad >= 0
+            io_.write(_buf + b"\\x00" * pad)
+            return obj
+        """)
+        return f"FixedSizeBuild_{aid}(obj, io)"
+
     def _emitfulltype(self, ksy, bitwise):
         return dict(size=repr(self.length).replace("this.",""), **self.subcon._compilefulltype(ksy, bitwise))
 
@@ -5118,6 +5218,32 @@ class NullTerminated(Subconstruct):
         if len(self.term) > 1:
             raise NotImplementedError
         return dict(terminator=byte2int(self.term), include=self.include, consume=self.consume, eos_error=self.require, **self.subcon._compilefulltype(ksy, bitwise))
+
+    def _emitbuild(self, code):
+        aid = code.allocateId()
+        code.append(f"""
+        def NullTerminated_{aid}(obj, io):
+            obj = {self.subcon._compilebuild(code)}
+            io.write({self.term})
+            return obj
+        """)
+        return f"NullTerminated_{aid}(obj, io)"
+
+    def _emitparse(self, code):
+        aid = code.allocateId()
+        code.append(f"""
+        from io import BytesIO
+        def NullTerminated_{aid}(io):
+            def _collect(io):
+                while True:
+                    elem = io.read({len(self.term)})
+                    if elem == {self.term}:
+                        break
+                    yield elem
+            io = BytesIO(b"".join(_collect(io)))
+            return {self.subcon._compileparse(code)}
+        """)
+        return f"NullTerminated_{aid}(io)"
 
 
 class NullStripped(Subconstruct):
@@ -6275,6 +6401,20 @@ class ExprAdapter(Adapter):
         super().__init__(subcon)
         self._decode = lambda obj,ctx,path: decoder(obj,ctx)
         self._encode = lambda obj,ctx,path: encoder(obj,ctx)
+        self._decode_orig = decoder
+        self._encode_orig = encoder
+    
+    def _emitdecode(self, code):
+        _aid = code.allocateId()
+        code.userfunction[_aid] = self._decode_orig
+        return f"userfunction[{_aid}](obj, None)"
+    
+    def _emitencode(self, code):
+        _aid = code.allocateId()
+        code.userfunction[_aid] = self._encode_orig
+        return f"userfunction[{_aid}](obj, None)"
+
+
 
 
 class ExprSymmetricAdapter(ExprAdapter):
