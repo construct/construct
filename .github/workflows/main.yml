@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "pytest<8.0.0" pytest-benchmark numpy arrow ruamel.yaml cloudpickle lz4
+          pip install pytest pytest-benchmark numpy arrow ruamel.yaml cloudpickle lz4
       - name: Install cryptography (but not for pypy on windows)
         if: ${{ !((matrix.os == 'windows-latest') && (matrix.python-version == 'pypy3.9')) }}
         run: |
