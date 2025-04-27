@@ -3906,7 +3906,11 @@ def Optional(subcon):
         >>> d.build(None)
         b''
     """
-    return Select(subcon, Pass)
+    macro = Select(subcon, Pass)
+    def _emitfulltype(ksy, bitwise):
+        return dict(type=subcon._compileprimitivetype(ksy, bitwise), if_="not(_io.eof)")
+    macro._emitfulltype = _emitfulltype
+    return macro
 
 
 def If(condfunc, subcon):
@@ -4525,6 +4529,11 @@ class Peek(Subconstruct):
 
     def _sizeof(self, context, path):
         return 0
+
+    def _emitprimitivetype(self, ksy, bitwise):
+        name = "instance_%s" % ksy.allocateId()
+        ksy.instances[name] = dict(**self.subcon._compilefulltype(ksy, bitwise))
+        return name
 
     def _emitparse(self, code):
         code.append("""
