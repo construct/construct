@@ -3377,6 +3377,20 @@ class Numpy(Construct):
         numpy.save(stream, obj)
         return obj
 
+    def _emitparse(self, code):
+        "factory_%s" % code.allocateId()
+        code.append("""
+            import numpy
+                    """)
+        return "numpy.load(io)"
+
+    def _emitbuild(self, code):
+        "factory_%s" % code.allocateId()
+        code.append("""
+            import numpy
+                    """)
+        return "numpy.save(io, obj)"
+
 
 class NamedTuple(Adapter):
     r"""
