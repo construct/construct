@@ -5345,7 +5345,7 @@ class Restreamed(Subconstruct):
         stream2 = RestreamedBytesIO(stream, self.decoder, self.decoderunit, self.encoder, self.encoderunit)
         buildret = self.subcon._build(obj, stream2, context, path)
         stream2.close()
-        return obj
+        return buildret
 
     def _sizeof(self, context, path):
         if self.sizecomputer is None:
