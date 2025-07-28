@@ -478,7 +478,7 @@ class Construct(object):
         """Override in your subclass."""
         raise NotImplementedError
 
-    def sizeof(self, **contextkw):
+    def sizeof(self, **contextkw) -> int:
         r"""
         Calculate the size of this object, optionally using a context.
 
