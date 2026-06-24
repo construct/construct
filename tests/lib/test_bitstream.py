@@ -53,3 +53,12 @@ def test_rebuffered():
         assert bstream.read(50) == data[at:at+50]
         jumpback = random.randrange(1, 19)
         assert bstream.seek(-jumpback, 1)
+
+def test_rebuffered_reading_past_eof():
+    # reading past end of stream must raise, not hang forever (issue #988)
+    bstream = RebufferedBytesIO(io.BytesIO(b"abc"))
+    assert bstream.read(3) == b"abc"
+    assert raises(bstream.read, 1) == IOError
+
+    bstream = RebufferedBytesIO(io.BytesIO(b"abc"))
+    assert raises(bstream.read, 5) == IOError

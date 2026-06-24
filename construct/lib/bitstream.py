@@ -91,9 +91,13 @@ class RebufferedBytesIO(object):
                 newdata = self.substream.read(128*1024)
             except BlockingIOError:
                 newdata = None
-            if not newdata:
+            if newdata is None:
+                # non-blocking stream has no data ready yet, keep polling
                 sleep(0)
                 continue
+            if not newdata:
+                # empty bytes signal end of file, stop reading
+                break
             self.rwbuffer += newdata
         data = self.rwbuffer[startsat-self.moved:endsat-self.moved]
         self.offset += count
@@ -109,10 +113,18 @@ class RebufferedBytesIO(object):
         startsat = self.offset
         endsat = startsat + len(data)
         while self.moved + len(self.rwbuffer) < startsat:
-            newdata = self.substream.read(128*1024)
-            self.rwbuffer += newdata
-            if not newdata:
+            try:
+                newdata = self.substream.read(128*1024)
+            except BlockingIOError:
+                newdata = None
+            if newdata is None:
+                # non-blocking stream has no data ready yet, keep polling
                 sleep(0)
+                continue
+            if not newdata:
+                # empty bytes signal end of file, stop reading
+                break
+            self.rwbuffer += newdata
         self.rwbuffer = self.rwbuffer[:startsat-self.moved] + data + self.rwbuffer[endsat-self.moved:]
         self.offset = endsat
         if self.tailcutoff is not None and self.moved < self.offset - self.tailcutoff:
