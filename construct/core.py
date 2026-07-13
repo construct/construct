@@ -1720,7 +1720,7 @@ class StringEncoded(Adapter):
     def _decode(self, obj, context, path):
         try:
             return obj.decode(self.encoding)
-        except:
+        except (UnicodeDecodeError, LookupError):
             raise StringError(f"cannot use encoding {self.encoding!r} to decode {obj!r}")
 
     def _encode(self, obj, context, path):
@@ -1730,7 +1730,7 @@ class StringEncoded(Adapter):
             return b""
         try:
             return obj.encode(self.encoding)
-        except:
+        except (UnicodeEncodeError, LookupError):
             raise StringError(f"cannot use encoding {self.encoding!r} to encode {obj!r}")
 
     def _emitparse(self, code):
