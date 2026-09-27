@@ -3873,7 +3873,9 @@ class Select(Construct):
     def _build(self, obj, stream, context, path):
         for sc in self.subcons:
             try:
-                data = sc.build(obj, **context)
+                stream2 = io.BytesIO()
+                sc._build(obj, stream2, Container(context), path)
+                data = stream2.getvalue()
             except ExplicitError:
                 raise
             except Exception:
