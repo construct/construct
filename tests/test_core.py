@@ -2441,12 +2441,32 @@ def test_compile_binexpr_bitwise_and_issue_1039():
     common(d, b"\x01", {"a": 1, "cond": None})
     common(d, b" \x05", {"a": 32, "cond": 5})
 
-@xfail(reason="unknown problem with Select")
-def test_select_issue_1038():
+@pytest.mark.parametrize("ctx, expected", [(1, b"\x09"), (2, b"\x00\x09")])
+def test_select_issue_1038(ctx, expected):
     s = Struct(
         "value" / Select(IfThenElse(this._params.ctx == 1, Byte, Short)),
     )
-    assert s.build(dict(value=9), ctx=1) == b"\x09"
+    assert s.build(dict(value=9), ctx=ctx) == expected
+    assert s.parse(expected, ctx=ctx) == dict(value=9)
+
+def test_select_failed_build_isolated():
+    class FailingBuild(Subconstruct):
+        def _build(self, obj, stream, context, path):
+            context.changed = True
+            self.subcon._build(obj, stream, context, path)
+            raise ValidationError("try the next subcon", path=path)
+
+    s = Struct(
+        "value" / Select(
+            FailingBuild(Byte),
+            IfThenElse(lambda ctx: ctx.get("changed", False), Error, Byte),
+        ),
+    )
+    assert s.build(dict(value=9)) == b"\x09"
+
+def test_select_field_named_copy():
+    s = Struct("copy" / Byte, "value" / Select(Byte))
+    assert s.build(dict(copy=7, value=9)) == b"\x07\x09"
 
 def test_select_issue_1038_fixed():
     s = Struct(
