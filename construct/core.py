@@ -969,7 +969,7 @@ class Bytes(Construct):
     def _build(self, obj, stream, context, path):
         length = self.length(context) if callable(self.length) else self.length
         data = integer2bytes(obj, length) if isinstance(obj, int) else obj
-        data = bytes(data) if type(data) is bytearray else data
+        data = bytes(data) if isinstance(data, bytearray) else data
         stream_write(stream, data, length, path)
         return data
 
@@ -1013,7 +1013,7 @@ class GreedyBytes(Construct):
         return stream_read_entire(stream, path)
 
     def _build(self, obj, stream, context, path):
-        data = bytes(obj) if type(obj) is bytearray else obj
+        data = bytes(obj) if isinstance(obj, bytearray) else obj
         stream_write(stream, data, len(data), path)
         return data
 
@@ -2835,7 +2835,7 @@ class Const(Subconstruct):
 
     def __init__(self, value, subcon=None):
         if subcon is None:
-            if not isinstance(value, bytes):
+            if not isinstance(value, bytes) and not isinstance(value, bytearray):
                 raise StringError(f"given non-bytes value {repr(value)}, perhaps unicode?")
             subcon = Bytes(len(value))
         super().__init__(subcon)
