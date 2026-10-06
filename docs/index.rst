@@ -88,6 +88,7 @@ API Reference
    api/strings
    api/mappings
    api/structs
+   api/containers
    api/repeaters
    api/special
    api/misc
