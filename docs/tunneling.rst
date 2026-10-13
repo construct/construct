@@ -225,7 +225,7 @@ Data can be easily checksummed. Note that checksum field does not need to be ``B
     d.build(dict(fields=dict(value={})))
 
 
-Data can also be easily compressed. Supported encodings include zlib/gzip/bzip2/lzma and entire codecs module. When parsing, entire stream is consumed. When building, it puts compressed bytes without marking the end. This construct should be used with ``Prefixed`` or entire stream.
+Data can also be easily compressed. Supported encodings include zlib/gzip/bzip2/lzma and entire codecs module. When parsing, entire stream is consumed. When building, it puts compressed bytes without marking the end. Use ``Prefixed`` when an encoded-length field immediately precedes the compressed data, or ``FixedSized`` when that length is available elsewhere in the context. An unbounded ``Compressed`` is suitable when the compressed data occupies the entire remaining stream.
 
 >>> d = Prefixed(VarInt, Compressed(GreedyBytes, "zlib"))
 >>> d.build(bytes(100))
@@ -240,6 +240,82 @@ LZ4 compression is also supported. It provides less compaction but does it at hi
 b'"\x04"M\x18h@d\x00\x00\x00\x00\x00\x00\x00#\x0b\x00\x00\x00\x1f\x00\x01\x00KP\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 >>> len(_)
 35
+
+
+.. _compressed-length-fields:
+
+Compressed data with a separate length field
+----------------------------------------------------
+
+``Compressed`` gives its subcon a **decompressed** stream. The subcon can be
+``GreedyBytes`` for a byte string, or a ``Struct`` or another construct describing
+the decompressed content. In particular, ``Compressed(Bytes(10), "zlib")``
+reads all remaining compressed input, then returns ten decompressed bytes; it
+does not bound the compressed input. If the decompressed format must consume
+all of its input, include ``Terminated`` in that format.
+
+When a header already supplies the encoded length, put ``FixedSized`` outside
+``Compressed``. This leaves following fields available to the enclosing struct::
+
+    Struct(
+        "compressed_size" / Int32ul,
+        "version" / Byte,
+        "payload" / FixedSized(this.compressed_size,
+            Compressed(GreedyBytes, "zlib")),
+        "trailer" / Const(b"END"),
+    )
+
+That definition requires the encoded length when building, too. It cannot
+derive it from the length of the uncompressed payload. Likewise, a ``Rebuild``
+before the payload cannot measure bytes that have not yet been written.
+
+For a seekable stream, reserve the length field, write the compressed payload
+once, and then fill in its measured length with ``Pointer``. The following
+example format has a version byte between the length and the payload. Parsing
+uses the stored length; building lets the compressor determine the length.
+``Pointer`` restores the stream position, so the trailer is still written
+after the payload.
+
+.. doctest:: compressed-length
+
+    >>> from construct import (Byte, Compressed, Const, FixedSized, GreedyBytes,
+    ...                        IfThenElse, Int32ul, Pointer, Rebuild, Struct,
+    ...                        Tell, this)
+    >>> compressed = Compressed(GreedyBytes, "zlib")
+    >>> packet = Struct(
+    ...     "size_offset" / Tell,
+    ...     "compressed_size" / Rebuild(Int32ul, 0),
+    ...     "version" / Byte,
+    ...     "payload_start" / Tell,
+    ...     "payload" / IfThenElse(this._parsing,
+    ...         FixedSized(this.compressed_size, compressed), compressed),
+    ...     "payload_end" / Tell,
+    ...     Pointer(this.size_offset,
+    ...         Rebuild(Int32ul, this.payload_end - this.payload_start)),
+    ...     "trailer" / Const(b"END"),
+    ... )
+    >>> payload = b"hello" * 100
+    >>> encoded = packet.build(dict(version=1, payload=payload))
+    >>> decoded = packet.parse(encoded)
+    >>> decoded.payload == payload
+    True
+    >>> decoded.compressed_size == len(encoded) - 4 - 1 - 3
+    True
+    >>> packet.build(decoded) == encoded
+    True
+
+The initial ``Rebuild`` writes a placeholder when building; when parsing it
+reads the stored length normally. The later ``Pointer`` replaces the placeholder
+when building and reads it again when parsing. ``Tell`` records positions in the
+current stream, so the same definition also works when the packet starts at a
+nonzero offset. The compressed length excludes the header and trailer. Callers
+do not need to provide a length, and a supplied length is recomputed on build.
+
+This recipe requires a seekable, tellable stream. ``build()`` uses an in-memory
+stream and satisfies that requirement. For a non-seekable destination, build the
+packet into bytes first, then write those bytes to the destination. Prefer
+``Prefixed`` when the wire format permits an adjacent length prefix; it already
+manages that case.
 
 
 Encryption and authentication

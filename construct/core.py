@@ -5602,7 +5602,9 @@ class Checksum(Construct):
 
 class Compressed(Tunnel):
     r"""
-    Compresses and decompresses underlying stream when processing subcon. When parsing, entire stream is consumed. When building, it puts compressed bytes without marking the end. This construct should be used with :class:`~construct.core.Prefixed` .
+    Compresses and decompresses underlying stream when processing subcon. When parsing, entire stream is consumed. When building, it puts compressed bytes without marking the end. Use :class:`~construct.core.Prefixed` for an adjacent encoded-length prefix, or :class:`~construct.core.FixedSized` when the encoded length is already available in the context.
+
+    The subcon describes the decompressed data, not the compressed bytes. For example, ``Compressed(Bytes(10), "zlib")`` consumes the entire remaining input stream and then parses ten decompressed bytes. It does not limit the compressed input to ten bytes. See :ref:`compressed-length-fields` for examples, including building a separate length field without compressing twice.
 
     Parsing and building transforms all bytes using a specified codec. Since data is processed until EOF, it behaves similar to `GreedyBytes`. Size is undefined.
 
