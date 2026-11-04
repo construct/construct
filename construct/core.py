@@ -3873,7 +3873,17 @@ class Select(Construct):
     def _build(self, obj, stream, context, path):
         for sc in self.subcons:
             try:
-                data = sc.build(obj, **context)
+                # Build into a temporary stream using a copy of the current
+                # context, mirroring how _parse tries each subcon in place.
+                # Going through sc.build(obj, **context) instead flattens
+                # the context into build keywords, which resets _params to
+                # the flattened dict and breaks this._params lookups in
+                # nested constructs (see issue #1038). The copy also keeps
+                # context changes made by a failed attempt from leaking
+                # into the next attempt or back into the caller.
+                stream2 = io.BytesIO()
+                sc._build(obj, stream2, Container(context), path)
+                data = stream2.getvalue()
             except ExplicitError:
                 raise
             except Exception:
