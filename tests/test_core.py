@@ -2441,18 +2441,45 @@ def test_compile_binexpr_bitwise_and_issue_1039():
     common(d, b"\x01", {"a": 1, "cond": None})
     common(d, b" \x05", {"a": 32, "cond": 5})
 
-@xfail(reason="unknown problem with Select")
 def test_select_issue_1038():
     s = Struct(
         "value" / Select(IfThenElse(this._params.ctx == 1, Byte, Short)),
     )
     assert s.build(dict(value=9), ctx=1) == b"\x09"
+    assert s.build(dict(value=9), ctx=2) == b"\x00\x09"
+    assert s.parse(b"\x09", ctx=1) == dict(value=9)
+    assert s.parse(b"\x00\x09", ctx=2) == dict(value=9)
 
 def test_select_issue_1038_fixed():
     s = Struct(
         "value" / Select(If(this._.ctx == 1, Byte), If(this._.ctx == 2, Short)),
     )
     assert s.build(dict(value=9), ctx=1) == b"\x09"
+
+def test_select_build_attempts_are_isolated():
+    # a failed attempt must not leak its context changes into the next
+    # attempt (nor back into the caller's context)
+    class MutatingFail(Subconstruct):
+        def _build(self, obj, stream, context, path):
+            context.leaked = True
+            self.subcon._build(obj, stream, context, path)
+            raise ValidationError("fail on purpose", path=path)
+    s = Struct(
+        "value" / Select(
+            MutatingFail(Byte),
+            IfThenElse(lambda ctx: ctx.get("leaked", False), Error, Byte),
+        ),
+    )
+    assert s.build(dict(value=9)) == b"\x09"
+
+def test_select_build_sees_sibling_fields():
+    # subcons inside Select still see fields built before them
+    s = Struct(
+        "kind" / Byte,
+        "value" / Select(IfThenElse(this.kind == 1, Byte, Short)),
+    )
+    assert s.build(dict(kind=1, value=9)) == b"\x01\x09"
+    assert s.build(dict(kind=2, value=9)) == b"\x02\x00\x09"
 
 def test_unicode_error():
     d = Select(PaddedString(255, "ascii"), CString("ascii"), PascalString(Byte, "ascii"), GreedyString("ascii"), Pass)
